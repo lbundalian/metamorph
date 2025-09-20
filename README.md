@@ -1,4 +1,4 @@
-# Metamorph - Bfarm Schema to X Schema parser
+# Metamorph - Bfarm Schema parser
 
 <p align="center">
   <img src="metamorph.png" alt="Metamorph Logo" width="120" height="120"/>
@@ -6,9 +6,8 @@
 
 ## Overview
 
-Metamorph is a Python library designed for transforming medical data formats, specifically focusing on converting KDK (German clinical data format) to RD (Rare Disease) data structures.
+Metamorph is a Python module designed for transforming medical data formats involved in genomeDE project.First iteration focuses on converting KDK (Klinische Datenknoten) to RD (Rare Disease) data structures and is designed to enable extension for future X2X conversion.
 
-## ✅ **YES - This project CAN transform KDK to RD format!**
 
 ## Features
 
