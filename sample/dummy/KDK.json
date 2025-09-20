@@ -1,0 +1,170 @@
+{
+	"case": {
+		"priorDiagnostic": {
+			"type": "genetic_testing",
+			"date": "2024-01-15"
+		},
+		"diagnosisOd": {
+			"germlineDiagnosisConfirmed": true,
+			"hpoTerms": [
+				{
+					"text": "Microcephaly",
+					"system": "https://hpo.jax.org",
+					"code": "HP:0000252",
+					"version": "2024-09-01"
+				},
+				{
+					"text": "Intellectual disability",
+					"system": "https://hpo.jax.org",
+					"code": "HP:0001249",
+					"version": "2024-09-01"
+				},
+				{
+					"text": "Seizure",
+					"system": "https://hpo.jax.org",
+					"code": "HP:0001250",
+					"version": "2024-09-01"
+				}
+			],
+			"topography": {
+				"system": "https://www.bfarm.de/DE/Kodiersysteme/Terminologien/Alpha-ID-SE",
+				"code": "T90.9",
+				"version": "2025"
+			},
+			"histology": {
+				"text": "Neurodevelopmental disorder",
+				"system": "https://www.bfarm.de/DE/Kodiersysteme/Terminologien/Alpha-ID-SE",
+				"code": "M9999",
+				"version": "2025"
+			},
+			"mainDiagnosis": {
+				"code": "Q87.0",
+				"version": "2025",
+				"date": "2024-03-15",
+				"system": "http://fhir.de/CodeSystem/bfarm/icd-10-gm",
+				"display": "Angeborene Fehlbildungssyndrome mit vorwiegender Beteiligung des Gesichtes"
+			},
+			"additionalDiagnoses": [
+				{
+					"code": "Q02",
+					"version": "2025",
+					"date": "2024-03-15",
+					"system": "http://fhir.de/CodeSystem/bfarm/icd-10-gm",
+					"display": "Mikrozephalie"
+				},
+				{
+					"code": "F70.9",
+					"version": "2025",
+					"date": "2024-04-02",
+					"system": "http://fhir.de/CodeSystem/bfarm/icd-10-gm",
+					"display": "Leichte Intelligenzminderung ohne Angabe einer Verhaltensstörung"
+				}
+			],
+			"ecogPerformanceStatusScore": "2",
+			"libraryType": "WES"
+		}
+	},
+	"metaData": {
+		"gender": "male",
+		"mvConsent": {
+			"version": "1.2",
+			"scope": [
+				{
+					"type": "research",
+					"date": "2024-01-10",
+					"domain": "rare_diseases"
+				},
+				{
+					"type": "data_sharing",
+					"date": "2024-01-10",
+					"domain": "international_registries"
+				}
+			],
+			"presentationDate": "2024-01-10"
+		},
+		"birthDate": "2020-05-15",
+		"researchConsents": [
+			{
+				"schemaVersion": "2.1.0",
+				"scope": {
+					"scope": {
+						"status": "active",
+						"category": [
+							{
+								"coding": [
+									{
+										"system": "http://terminology.hl7.org/CodeSystem/consentcategorycodes",
+										"code": "research"
+									}
+								]
+							}
+						],
+						"scope": {
+							"coding": [
+								{
+									"system": "http://terminology.hl7.org/CodeSystem/consentscope",
+									"code": "research"
+								}
+							]
+						},
+						"patient": {
+							"reference": "Patient/example-patient-001",
+							"display": "Max Mustermann"
+						},
+						"dateTime": "2024-01-10T10:00:00Z",
+						"policy": [
+							{
+								"uri": "https://example.org/research-consent-policy"
+							}
+						],
+						"provision": {
+							"type": "permit",
+							"period": {
+								"start": "2024-01-10",
+								"end": "2034-01-10"
+							},
+							"provision": []
+						}
+					}
+				},
+				"presentationDate": "2024-01-10"
+			}
+		],
+		"decisionToInclude": true,
+		"coverageType": "gesetzliche Krankenversicherung",
+		"tanC": "AOK12345678",
+		"submission": {
+			"clinicalDataNodeId": "CDN-Berlin-001",
+			"type": "initial_submission",
+			"submitterId": "SUB-2024-001",
+			"genomicDataCenterId": "GDC-Charité-001",
+			"date": "2024-03-20",
+			"diseaseType": "rare_neurological_disorder"
+		},
+		"molecularBoardDecisionDate": "2024-04-01",
+		"addressAGS": "11000000"
+	},
+	"plan": {
+		"preventiveMeasures": [
+			{
+				"type": "genetic_counseling",
+				"identifier": "GC-2024-001"
+			},
+			{
+				"type": "regular_neurological_monitoring",
+				"identifier": "NM-2024-001"
+			},
+			{
+				"type": "developmental_therapy",
+				"identifier": "DT-2024-001"
+			}
+		],
+		"carePlanOd": {
+			"studyRecommended": true,
+			"counsellingRecommended": true,
+			"interventionRecommended": true,
+			"molecularBoardDecisionDate": "2024-04-01",
+			"reEvaluationRecommended": true
+		}
+	}
+}
