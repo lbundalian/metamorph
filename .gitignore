@@ -175,6 +175,7 @@ transformed_result.json
 # Confidential data
 sample/confidential/
 confidential/
+output/
 
 # Temporary files
 temp/

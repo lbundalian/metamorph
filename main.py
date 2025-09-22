@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 from metamorph.morphers.kdk_to_rd_morpher import KDKToRDMorpher
 from metamorph.utils.validators import DataValidator
 from metamorph.utils.rd_schema_converter import RDSchemaConverter

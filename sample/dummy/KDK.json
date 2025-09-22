@@ -53,11 +53,11 @@
 					"display": "Mikrozephalie"
 				},
 				{
-					"code": "F70.9",
+					"code": "F70",
 					"version": "2025",
 					"date": "2024-04-02",
 					"system": "http://fhir.de/CodeSystem/bfarm/icd-10-gm",
-					"display": "Leichte Intelligenzminderung ohne Angabe einer Verhaltensstörung"
+					"display": "Leichte Intelligenzminderung"
 				}
 			],
 			"ecogPerformanceStatusScore": "2",

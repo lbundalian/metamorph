@@ -9,25 +9,16 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
-            "args": ["sample/KDK.json"],
+            "args": ["sample/dummy/KDK.json"],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
         },
         {
-            "name": "Python Debugger: Main with Custom Output",
+            "name": "Python Debugger: Confidential Case",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
-            "args": ["sample/KDK.json", "debug_output.json"],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "name": "Python Debugger: Complex Case",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/main.py",
-            "args": ["sample/2508261858_Case_250825_E2E2_KDK.json", "debug_complex_output.json"],
+            "args": ["sample/confidential/2508261858_Case_250825_E2E2_KDK.json", "output/debug_confidential_output.json"],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
         }
