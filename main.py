@@ -129,6 +129,8 @@ def print_transformation_summary(kdk_data: dict, rd_data: dict):
         if codes:
             main_code = codes[0]
             print(f"  {i}. {main_code.get('code')} - {main_code.get('display', 'No description')}")
+            if len(codes) > 1:
+                print(f"     (+{len(codes)-1} additional codes)")
     
     # HPO Terms
     hpo_terms = rd_data.get('hpoTerms', [])
@@ -144,6 +146,36 @@ def print_transformation_summary(kdk_data: dict, rd_data: dict):
     # Episodes of Care
     episodes = rd_data.get('episodesOfCare', [])
     print(f"Episodes of Care: {len(episodes)} items")
+    
+    # New sections from RD.json structure
+    gmfcs_status = rd_data.get('gmfcsStatus', [])
+    if gmfcs_status:
+        print(f"GMFCS Status: {len(gmfcs_status)} items")
+    
+    hospitalization = rd_data.get('hospitalization', {})
+    if hospitalization:
+        print(f"Hospitalization: Available")
+    
+    ngs_reports = rd_data.get('ngsReports', [])
+    if ngs_reports:
+        print(f"NGS Reports: {len(ngs_reports)} items")
+        # Show variant counts if available
+        for report in ngs_reports:
+            results = report.get('results', {})
+            if results:
+                small_vars = len(results.get('smallVariants', []))
+                cnvs = len(results.get('copyNumberVariants', []))
+                svs = len(results.get('structuralVariants', []))
+                if small_vars or cnvs or svs:
+                    print(f"  - Variants: {small_vars} small, {cnvs} CNV, {svs} structural")
+    
+    follow_ups = rd_data.get('followUps', [])
+    if follow_ups:
+        print(f"Follow-ups: {len(follow_ups)} items")
+    
+    therapies = rd_data.get('therapies', [])
+    if therapies:
+        print(f"Therapies: {len(therapies)} items")
     
     print("="*60)
 

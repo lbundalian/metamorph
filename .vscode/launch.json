@@ -21,6 +21,24 @@
             "args": ["sample/confidential/2508261858_Case_250825_E2E2_KDK.json", "output/debug_confidential_output.json"],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Python Debugger: Test with Validate API (Dummy)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "args": ["sample/dummy/KDK.json", "--validate"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Python Debugger: Test with Validate API (Confidential)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "args": ["sample/confidential/2508261858_Case_250825_E2E2_KDK.json", "output/debug_confidential_output.json", "--validate"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

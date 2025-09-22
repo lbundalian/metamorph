@@ -54,7 +54,7 @@ def validate_with_api(json_file_path: str, api_url: str = "https://preview.dnpm-
                         return {
                             "validation_successful": False,
                             "api_response": response,
-                            "errors": [issue["message"] for issue in errors]
+                            "errors": [issue.get("message", str(issue)) for issue in errors]
                         }
                     else:
                         return {
