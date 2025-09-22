@@ -1,0 +1,273 @@
+{
+  "patient": {
+    "id": "example-patient-001",
+    "gender": {
+      "code": "male",
+      "display": "Männlich",
+      "system": "Gender"
+    },
+    "birthDate": "2020-05-15",
+    "address": {
+      "municipalityCode": "11000000"
+    },
+    "healthInsurance": {
+      "type": {
+        "code": "GKV",
+        "display": "gesetzliche Krankenversicherung",
+        "system": "http://fhir.de/CodeSystem/versicherungsart-de-basis"
+      },
+      "reference": {
+        "id": "AOK12345678",
+        "system": "https://www.dguv.de/arge-ik",
+        "display": "Krankenversicherung",
+        "type": "HealthInsurance"
+      }
+    },
+    "age": {
+      "value": 5,
+      "unit": "Years"
+    },
+    "vitalStatus": {
+      "code": "alive",
+      "display": "Lebend",
+      "system": "dnpm-dip/patient/vital-status"
+    }
+  },
+  "episodesOfCare": [
+    {
+      "id": "7742ca74-dbb6-46fe-822e-becde4325cb3",
+      "patient": {
+        "id": "example-patient-001",
+        "type": "Patient"
+      },
+      "period": {
+        "start": "2025-09-22"
+      }
+    }
+  ],
+  "diagnoses": [
+    {
+      "id": "70ccf85f-cfcc-43d5-8909-314a5ad349a7",
+      "patient": {
+        "id": "example-patient-001",
+        "type": "Patient"
+      },
+      "recordedOn": "2024-03-15",
+      "codes": [
+        {
+          "code": "Q87.0",
+          "display": "Angeborene Fehlbildungssyndrome mit vorwiegender Beteiligung des Gesichtes",
+          "system": "http://fhir.de/CodeSystem/bfarm/icd-10-gm",
+          "version": "2025"
+        }
+      ],
+      "familyControlLevel": {
+        "code": "sporadic",
+        "display": "Sporadisch",
+        "system": "dnpm-dip/rd/diagnosis/family-control-level"
+      },
+      "verificationStatus": {
+        "code": "confirmed",
+        "display": "Bestätigt",
+        "system": "dnpm-dip/rd/diagnosis/verification-status"
+      }
+    },
+    {
+      "id": "18978f56-8f4f-499f-9260-dd783e8271e1",
+      "patient": {
+        "id": "example-patient-001",
+        "type": "Patient"
+      },
+      "recordedOn": "2024-03-15",
+      "codes": [
+        {
+          "code": "Q02",
+          "display": "Mikrozephalie",
+          "system": "http://fhir.de/CodeSystem/bfarm/icd-10-gm",
+          "version": "2025"
+        }
+      ],
+      "familyControlLevel": {
+        "code": "sporadic",
+        "display": "Sporadisch",
+        "system": "dnpm-dip/rd/diagnosis/family-control-level"
+      },
+      "verificationStatus": {
+        "code": "provisional",
+        "display": "Vorläufig",
+        "system": "dnpm-dip/rd/diagnosis/verification-status"
+      }
+    },
+    {
+      "id": "3f08332b-c731-4376-856b-a5922a885fd2",
+      "patient": {
+        "id": "example-patient-001",
+        "type": "Patient"
+      },
+      "recordedOn": "2024-04-02",
+      "codes": [
+        {
+          "code": "F70.9",
+          "display": "Leichte Intelligenzminderung ohne Angabe einer Verhaltensstörung",
+          "system": "http://fhir.de/CodeSystem/bfarm/icd-10-gm",
+          "version": "2025"
+        }
+      ],
+      "familyControlLevel": {
+        "code": "sporadic",
+        "display": "Sporadisch",
+        "system": "dnpm-dip/rd/diagnosis/family-control-level"
+      },
+      "verificationStatus": {
+        "code": "provisional",
+        "display": "Vorläufig",
+        "system": "dnpm-dip/rd/diagnosis/verification-status"
+      }
+    }
+  ],
+  "hpoTerms": [
+    {
+      "id": "62f99d4e-c1c1-462f-b2b2-f24b50f70180",
+      "patient": {
+        "id": "example-patient-001",
+        "type": "Patient"
+      },
+      "recordedOn": "2025-09-22",
+      "value": {
+        "code": "HP:0000252",
+        "system": "https://hpo.jax.org"
+      },
+      "status": {
+        "history": [
+          {
+            "status": {
+              "code": "unchanged",
+              "display": "Unverändert",
+              "system": "dnpm-dip/rd/hpo-term/status"
+            },
+            "date": "2025-09-22"
+          }
+        ]
+      },
+      "onsetDate": "2025-03"
+    },
+    {
+      "id": "45ab980e-3778-4523-be26-af44c2cdd62e",
+      "patient": {
+        "id": "example-patient-001",
+        "type": "Patient"
+      },
+      "recordedOn": "2025-09-22",
+      "value": {
+        "code": "HP:0001249",
+        "system": "https://hpo.jax.org"
+      },
+      "status": {
+        "history": [
+          {
+            "status": {
+              "code": "unchanged",
+              "display": "Unverändert",
+              "system": "dnpm-dip/rd/hpo-term/status"
+            },
+            "date": "2025-09-22"
+          }
+        ]
+      },
+      "onsetDate": "2025-03"
+    },
+    {
+      "id": "cf2ea32f-1211-4e10-aa42-fd7dad283147",
+      "patient": {
+        "id": "example-patient-001",
+        "type": "Patient"
+      },
+      "recordedOn": "2025-09-22",
+      "value": {
+        "code": "HP:0001250",
+        "system": "https://hpo.jax.org"
+      },
+      "status": {
+        "history": [
+          {
+            "status": {
+              "code": "unchanged",
+              "display": "Unverändert",
+              "system": "dnpm-dip/rd/hpo-term/status"
+            },
+            "date": "2025-09-22"
+          }
+        ]
+      },
+      "onsetDate": "2025-03"
+    }
+  ],
+  "carePlans": [
+    {
+      "id": "3bb73d34-e391-4b8e-afb1-f87a47322fbe",
+      "patient": {
+        "id": "example-patient-001",
+        "type": "Patient"
+      },
+      "issuedOn": "2024-04-01",
+      "geneticCounselingRecommended": true,
+      "reevaluationRecommended": true,
+      "therapyRecommendations": [
+        {
+          "id": "614faa1d-5cdd-4ea2-a789-075caa1c83ac",
+          "patient": {
+            "id": "example-patient-001",
+            "type": "Patient"
+          },
+          "issuedOn": "2025-09-22",
+          "category": {
+            "code": "causal",
+            "display": "Kausal",
+            "system": "dnpm-dip/rd/therapy/category"
+          },
+          "type": {
+            "code": "other",
+            "display": "Andere",
+            "system": "dnpm-dip/rd/therapy/type"
+          }
+        },
+        {
+          "id": "fc58e2d9-daa5-460f-9a29-bf2a399de2b6",
+          "patient": {
+            "id": "example-patient-001",
+            "type": "Patient"
+          },
+          "issuedOn": "2025-09-22",
+          "category": {
+            "code": "causal",
+            "display": "Kausal",
+            "system": "dnpm-dip/rd/therapy/category"
+          },
+          "type": {
+            "code": "other",
+            "display": "Andere",
+            "system": "dnpm-dip/rd/therapy/type"
+          }
+        },
+        {
+          "id": "dff3de4d-e2f6-4d71-8deb-1b7773582c24",
+          "patient": {
+            "id": "example-patient-001",
+            "type": "Patient"
+          },
+          "issuedOn": "2025-09-22",
+          "category": {
+            "code": "causal",
+            "display": "Kausal",
+            "system": "dnpm-dip/rd/therapy/category"
+          },
+          "type": {
+            "code": "other",
+            "display": "Andere",
+            "system": "dnpm-dip/rd/therapy/type"
+          }
+        }
+      ]
+    }
+  ]
+}

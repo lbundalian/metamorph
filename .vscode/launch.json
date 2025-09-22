@@ -9,7 +9,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
-            "args": ["sample/KDK.json"],
+            "args": ["sample/dummy/KDK_dummy.json"],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
         },

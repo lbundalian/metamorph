@@ -1,7 +1,11 @@
 import uuid
 from datetime import datetime
 from typing import Dict, Any, List, Optional
-from ..models.rd_model import RDSchema, Patient, Diagnosis, HPOTerm, CarePlan
+from ..models.rd_model import (
+    RDSchema, Patient, Diagnosis, HPOTerm, CarePlan, EpisodeOfCare,
+    TherapyRecommendation, StudyEnrollmentRecommendation, 
+    ClinicalManagementRecommendation, NGSReport, FollowUp, Therapy
+)
 from ..models.kdk_model import KDKSchema
 from .base_morpher import BaseMorpher
 
@@ -22,13 +26,15 @@ class KDKToRDMorpher(BaseMorpher):
         diagnoses = self._create_diagnoses(source, patient_id)
         hpo_terms = self._create_hpo_terms(source, patient_id)
         care_plans = self._create_care_plans(source, patient_id)
+        episodes_of_care = self._create_episodes_of_care(source, patient_id)
         
         # Create RD schema
         rd_schema = RDSchema(
             patient=patient,
             diagnoses=diagnoses,
             hpoTerms=hpo_terms,
-            carePlans=care_plans
+            carePlans=care_plans,
+            episodesOfCare=episodes_of_care
         )
 
         return rd_schema.to_dict()
@@ -85,6 +91,12 @@ class KDKToRDMorpher(BaseMorpher):
                     "code": "confirmed" if case_data.get("germlineDiagnosisConfirmed", False) else "provisional",
                     "display": "Bestätigt" if case_data.get("germlineDiagnosisConfirmed", False) else "Vorläufig",
                     "system": "dnpm-dip/rd/diagnosis/verification-status"
+                },
+
+                familyControlLevel={
+                    "code": "single-genome",
+                    "display": "Single Genome",
+                    "system": "dnpm-dip/rd/diagnosis/family-control-level"
                 }
             )
             diagnoses.append(diagnosis)
@@ -101,7 +113,17 @@ class KDKToRDMorpher(BaseMorpher):
                         "display": additional_diag.get("display", ""),
                         "system": additional_diag.get("system", ""),
                         "version": additional_diag.get("version", "")
-                    }]
+                    }],
+                    verificationStatus={
+                        "code": "provisional",
+                        "display": "Vorläufig",
+                        "system": "dnpm-dip/rd/diagnosis/verification-status"
+                    },
+                    familyControlLevel={
+                        "code": "single-genome",
+                        "display": "Single Genome", 
+                        "system": "dnpm-dip/rd/diagnosis/family-control-level"
+                    }
                 )
                 diagnoses.append(diagnosis)
         
@@ -154,28 +176,28 @@ class KDKToRDMorpher(BaseMorpher):
         
         return care_plans
 
-    def _create_therapy_recommendations(self, source: Dict[str, Any], patient_id: str) -> List[Dict[str, Any]]:
+    def _create_therapy_recommendations(self, source: Dict[str, Any], patient_id: str) -> List[TherapyRecommendation]:
         """Create therapy recommendations from preventive measures."""
         therapy_recommendations = []
         preventive_measures = source.get("plan", {}).get("preventiveMeasures", [])
         
         for measure in preventive_measures:
             if measure.get("type"):
-                therapy_rec = {
-                    "id": self.generate_id(),
-                    "patient": {"id": patient_id, "type": "Patient"},
-                    "issuedOn": datetime.now().strftime("%Y-%m-%d"),
-                    "category": {
-                        "code": "preventive",
-                        "display": "Präventiv",
+                therapy_rec = TherapyRecommendation(
+                    id=self.generate_id(),
+                    patient={"id": patient_id, "type": "Patient"},
+                    issuedOn=datetime.now().strftime("%Y-%m-%d"),
+                    category={
+                        "code": "symptomatic",
+                        "display": "Symptomatisch",
                         "system": "dnpm-dip/rd/therapy/category"
                     },
-                    "type": {
+                    type={
                         "code": "other",
                         "display": "Andere",
                         "system": "dnpm-dip/rd/therapy/type"
                     }
-                }
+                )
                 therapy_recommendations.append(therapy_rec)
         
         return therapy_recommendations
@@ -258,6 +280,23 @@ class KDKToRDMorpher(BaseMorpher):
             return None
         except (AttributeError, KeyError, IndexError, TypeError):
             return None
+
+    def _create_episodes_of_care(self, source: Dict[str, Any], patient_id: str) -> List[EpisodeOfCare]:
+        """Create episodes of care from KDK data."""
+        episodes = []
+        
+        # Create a basic episode of care for the case
+        case_data = source.get("case", {})
+        episode = EpisodeOfCare(
+            id=self.generate_id(),
+            patient={"id": patient_id, "type": "Patient"},
+            period={
+                "start": case_data.get("diagnosisOd", {}).get("onsetDate", datetime.now().strftime("%Y-%m-%d"))
+            }
+        )
+        episodes.append(episode)
+        
+        return episodes
 
     def validate(self, data: Dict[str, Any]) -> bool:
         """Validate the transformed RD data."""
