@@ -3,13 +3,13 @@ from typing import Dict, Any
 
 @dataclass
 class BaseModel:
-    """Base class for all schema models."""
+    # base class for all schema models
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert model to dictionary."""
+        # convert model to dict
         return asdict(self)
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'BaseModel':
-        """Create model from dictionary."""
+        # create model from dict
         return cls(**data)

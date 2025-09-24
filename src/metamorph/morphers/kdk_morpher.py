@@ -1,24 +1,4 @@
-"""
-KDK Morpher - Transforms KDK objects to different target schemas.
-
-Clean Architecture:
-- models/: Contains model/schema classes  
-- morphers/: Contains conversion scripts between schemas (e.g., KDKMorpher)
-- utils/: Contains other methods and classes
-- models/parsers/: Contains parser classes under models
-
-Your requested usage:
-    # Create KDK object (auto-parses JSON to KDK model)
-    kdk = KDK("path/to/kdk.json")
-    
-    # Create morpher and transform to target schema
-    morpher = KDKMorpher()
-    rd_object = morpher.morph(kdk, 'RD')  # Your exact API
-    
-    # Save and validate
-    morpher.save(rd_object, "output.json")
-    is_valid, message = morpher.validate(rd_object)
-"""
+# KDK Morpher - transforms KDK to different schemas
 from typing import Dict, Any, Union
 from ..models.kdk import KDK  
 from ..utils.validate_api import validate_with_api
@@ -27,38 +7,18 @@ import tempfile
 import os
 
 class KDKMorpher:
-    """
-    KDK Morpher class that transforms KDK objects to different target schemas.
+    # transforms KDK objects to different schemas
     
-    Architecture:
-    - Uses KDK objects from models/
-    - Transforms using morphers/ (this class)
-    - Validates using utils/
-    - Parsers are in models/parsers/
-    """
-    
-    SUPPORTED_SCHEMAS = ['RD']  # Will be extended for FHIR, HL7, etc.
+    SUPPORTED_SCHEMAS = ['RD']  # add more schemas later
     
     def __init__(self):
-        """Initialize the KDK Morpher."""
+        # init the morpher
         pass
     
     def morph(self, kdk_object: KDK, target_schema: str) -> Dict[str, Any]:
-        """
-        Transform KDK object to target schema.
+        # transform KDK to target schema
         
-        Args:
-            kdk_object: KDK object containing parsed KDK data
-            target_schema: Target schema string ('RD', more to be added later)
-            
-        Returns:
-            Dictionary containing the transformed data (RD object)
-            
-        Raises:
-            ValueError: If target_schema is not supported
-            RuntimeError: If KDK object is not properly initialized
-        """
-        # Validate inputs
+        # check inputs
         if not isinstance(kdk_object, KDK):
             raise TypeError("First argument must be a KDK object")
         
@@ -69,11 +29,11 @@ class KDKMorpher:
         if not kdk_object.schema:
             raise RuntimeError("KDK object is not properly initialized or parsed")
         
-        # Perform the transformation based on target schema
+        # do the transformation
         if target_schema == 'RD':
             return self._morph_to_rd(kdk_object)
         
-        # Future schemas will be added here
+        # add more schemas later
         # elif target_schema == 'FHIR':
         #     return self._morph_to_fhir(kdk_object)
         # elif target_schema == 'HL7':
@@ -82,7 +42,7 @@ class KDKMorpher:
         raise ValueError(f"Morpher for '{target_schema}' not implemented")
     
     def _morph_to_rd(self, kdk_object: KDK) -> Dict[str, Any]:
-        """Transform KDK object to RD schema using parsed KDK model properties directly."""
+        # transform KDK to RD format
         from ..models.rd_model import (
             Patient, Code, Age, VitalStatus, Address, Reference,
             Diagnosis, HPOTerm, TherapyRecommendation, CarePlan,
@@ -91,9 +51,8 @@ class KDKMorpher:
         from datetime import datetime
         import uuid
         
-        # Helper function for converting dataclass objects to dictionaries
+        # Helper function to convert objects to dicts
         def to_dict(obj):
-            """Convert dataclass objects to dictionaries."""
             if hasattr(obj, '__dict__'):
                 result = {}
                 for key, value in obj.__dict__.items():
@@ -106,86 +65,89 @@ class KDKMorpher:
                 return result
             return obj
         
-        # Access the parsed KDK schema object directly - this is the key!
-        kdk_schema = kdk_object.schema  # Access through KDK object property
+        # Get the KDK data
+        kdk_schema = kdk_object.schema
         
-        # Create RD Patient using KDK object properties
+        # Create patient data
         rd_patient = Patient(
-            id=kdk_schema.patient.id,  # Access through KDK object property
+            id=kdk_schema.patient.id,
             gender=Code(
-                code=kdk_schema.patient.gender.code,  # Access through KDK object property
+                code=kdk_schema.patient.gender.code,
                 display=kdk_schema.patient.gender.display or "",
                 system="http://hl7.org/fhir/administrative-gender"
             ),
-            birthDate=kdk_schema.patient.birthDate or "",  # Access through KDK object property
+            birthDate=kdk_schema.patient.birthDate or "",
             age=Age(
                 value=kdk_schema.patient.age.value,
                 unit=kdk_schema.patient.age.unit or "years"
-            ) if kdk_schema.patient.age else None,  # Access through KDK object property
+            ) if kdk_schema.patient.age else None,
             vitalStatus=VitalStatus(
-                code=kdk_schema.patient.vitalStatus.code or "alive",  # Access through KDK object property
+                code=kdk_schema.patient.vitalStatus.code or "alive",
                 system="dnpm-dip/rd/patient/vital-status"
             ),
-            dateOfDeath=kdk_schema.patient.dateOfDeath,  # Access through KDK object property
-            address=Address(),  # Default - not in KDK model
+            dateOfDeath=kdk_schema.patient.dateOfDeath,
+            address=Address(),  # default empty address
             healthInsurance=HealthInsurance(
                 type=Code(code="GKV", display="gesetzliche Krankenversicherung", system="http://fhir.de/CodeSystem/versicherungsart-de-basis")
             ),
             site=Code(code="default-site")
         )
         
-        # Create RD Diagnoses using KDK object properties
+        # Create diagnoses
         rd_diagnoses = []
-        for kdk_diagnosis in kdk_schema.diagnoses:  # Access through KDK object property
+        for kdk_diagnosis in kdk_schema.diagnoses:
             codes = []
             
-            # Track which code types are present in the original data
+            # Check what codes we have
             has_icd10 = bool(kdk_diagnosis.icd10)
             has_orphanet = bool(kdk_diagnosis.orphanet)
             has_alphaIdSE = bool(kdk_diagnosis.alphaIdSE)
             
-            # Access diagnosis codes through KDK object properties
-            if kdk_diagnosis.icd10:  # Access through KDK object property
+            # Add ICD-10 code if exists
+            if kdk_diagnosis.icd10:
                 codes.append(Code(
-                    code=kdk_diagnosis.icd10.code,  # Access through KDK object property
+                    code=kdk_diagnosis.icd10.code,
                     display=kdk_diagnosis.icd10.display or "",
                     version=kdk_diagnosis.icd10.version,
                     system="http://fhir.de/CodeSystem/bfarm/icd-10-gm"
                 ))
             
-            if kdk_diagnosis.orphanet:  # Access through KDK object property
+            # Add Orphanet code if exists
+            if kdk_diagnosis.orphanet:
                 codes.append(Code(
-                    code=kdk_diagnosis.orphanet.code,  # Access through KDK object property
+                    code=kdk_diagnosis.orphanet.code,
                     display=kdk_diagnosis.orphanet.display or "",
                     version=kdk_diagnosis.orphanet.version,
                     system="http://www.orpha.net"
                 ))
             
-            if kdk_diagnosis.alphaIdSE:  # Access through KDK object property
+            # Add Alpha-ID-SE code if exists
+            if kdk_diagnosis.alphaIdSE:
                 codes.append(Code(
-                    code=kdk_diagnosis.alphaIdSE.code,  # Access through KDK object property
+                    code=kdk_diagnosis.alphaIdSE.code,
                     display=kdk_diagnosis.alphaIdSE.display or "",
                     version=kdk_diagnosis.alphaIdSE.version,
                     system="http://fhir.de/CodeSystem/alpha-id-se"
                 ))
             
+            # Create the diagnosis object
             rd_diagnosis = Diagnosis(
                 id=str(uuid.uuid4()),
-                patient=Reference(id=kdk_schema.patient.id, type="Patient"),  # Access through KDK object property
-                recordedOn=kdk_diagnosis.recordedOn or datetime.now().strftime("%Y-%m-%d"),  # Access through KDK object property
+                patient=Reference(id=kdk_schema.patient.id, type="Patient"),
+                recordedOn=kdk_diagnosis.recordedOn or datetime.now().strftime("%Y-%m-%d"),
                 codes=codes,
                 verificationStatus=Code(
-                    code=kdk_diagnosis.verificationStatus.code if kdk_diagnosis.verificationStatus else "confirmed",  # Access through KDK object property
+                    code=kdk_diagnosis.verificationStatus.code if kdk_diagnosis.verificationStatus else "confirmed",
                     system="http://terminology.hl7.org/CodeSystem/condition-ver-status"
                 ),
                 familyControlLevel=Code(
-                    code=kdk_diagnosis.familyControlLevel.code if kdk_diagnosis.familyControlLevel else "single-genome",  # Access through KDK object property
+                    code=kdk_diagnosis.familyControlLevel.code if kdk_diagnosis.familyControlLevel else "single-genome",
                     system="dnpm-dip/rd/diagnosis/family-control-level"
                 ),
-                onsetDate=kdk_diagnosis.onsetDate  # Access through KDK object property
+                onsetDate=kdk_diagnosis.onsetDate
             )
             
-            # Check if any required codes are missing from the original data
+            # Check if any codes are missing
             missing_codes = []
             if not has_icd10:
                 missing_codes.append("ICD-10-GM")
@@ -194,9 +156,9 @@ class KDKMorpher:
             if not has_alphaIdSE:
                 missing_codes.append("Alpha-ID-SE")
             
-            # Add missingCodeReason if any codes are missing from original data
+            # Add missing code reason if needed
             if missing_codes:
-                # Convert diagnosis to dict first, then add missingCodeReason
+                # Convert to dict and add missing code reason
                 diagnosis_dict = to_dict(rd_diagnosis)
                 diagnosis_dict["missingCodeReason"] = {
                     "code": "no-matching-code",
@@ -206,45 +168,36 @@ class KDKMorpher:
             else:
                 rd_diagnoses.append(rd_diagnosis)
         
-        # Create RD HPO Terms using KDK object properties
+        # Create HPO terms
         rd_hpo_terms = []
-        for kdk_hpo in kdk_schema.hpoTerms:  # Access through KDK object property
+        for kdk_hpo in kdk_schema.hpoTerms:
             rd_hpo = HPOTerm(
                 id=str(uuid.uuid4()),
-                patient=Reference(id=kdk_schema.patient.id, type="Patient"),  # Access through KDK object property
-                recordedOn=kdk_hpo.recordedOn or datetime.now().strftime("%Y-%m-%d"),  # Access through KDK object property
+                patient=Reference(id=kdk_schema.patient.id, type="Patient"),
+                recordedOn=kdk_hpo.recordedOn or datetime.now().strftime("%Y-%m-%d"),
                 value=Code(
-                    code=kdk_hpo.value.code,  # Access through KDK object property
+                    code=kdk_hpo.value.code,
                     display=kdk_hpo.value.display or "",
                     version=kdk_hpo.value.version,
                     system="http://purl.obolibrary.org/obo/hp.owl"
                 ),
-                onsetDate=kdk_hpo.onsetDate  # Access through KDK object property
+                onsetDate=kdk_hpo.onsetDate
             )
             rd_hpo_terms.append(rd_hpo)
         
-        # Create the final RD structure
+        # Build final result
         rd_data = {
             "patient": to_dict(rd_patient),
             "diagnoses": [to_dict(diag) for diag in rd_diagnoses],
             "hpoTerms": [to_dict(hpo) for hpo in rd_hpo_terms],
-            "carePlans": [],  # Required by API
-            "episodesOfCare": []  # Required by API
+            "carePlans": [],  # required by API
+            "episodesOfCare": []  # required by API
         }
         
         return rd_data
     
     def save(self, transformed_object: Dict[str, Any], output_path: str) -> bool:
-        """
-        Save transformed object to JSON file.
-        
-        Args:
-            transformed_object: The transformed object dictionary to save
-            output_path: Path where to save the file
-            
-        Returns:
-            True if successful, False otherwise
-        """
+        # save the transformed data to json file
         try:
             from pathlib import Path
             output_file = Path(output_path)
@@ -261,61 +214,45 @@ class KDKMorpher:
             return False
     
     def validate(self, transformed_object: Dict[str, Any], target_schema: str = 'RD') -> tuple[bool, str]:
-        """
-        Validate transformed object against target schema API.
-        
-        Args:
-            transformed_object: The transformed object to validate
-            target_schema: The target schema to validate against
-            
-        Returns:
-            Tuple of (is_valid: bool, response_message: str)
-        """
+        # validate the transformed object against API
         if target_schema not in self.SUPPORTED_SCHEMAS:
             return False, f"Validation not supported for schema '{target_schema}'"
         
-        # Create temporary file for validation
+        # create temp file for validation
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8') as f:
             json.dump(transformed_object, f, indent=2, ensure_ascii=False)
             temp_file = f.name
         
         try:
-            # Validate using the API
+            # call the API
             validation_result = validate_with_api(temp_file)
             
-            # Process validation result with CLI-friendly messages
+            # make the response user friendly
             return self._parse_validation_response(validation_result)
                 
         except Exception as e:
             return False, f"Validation exception: {str(e)}"
         
         finally:
-            # Clean up temporary file
+            # cleanup temp file
             try:
                 os.unlink(temp_file)
             except:
-                pass  # Ignore cleanup errors
+                pass  # ignore errors
     
     def _parse_validation_response(self, validation_result: dict) -> tuple[bool, str]:
-        """
-        Parse API validation response into CLI-friendly messages.
+        # parse API response into nice messages
         
-        Args:
-            validation_result: Raw validation result from API
-            
-        Returns:
-            Tuple of (is_valid: bool, cli_message: str)
-        """
-        # Handle API errors
+        # handle API errors
         if "error" in validation_result:
             error = validation_result["error"]
             
-            # Special case: Plain text "Valid" response
+            # special case for "Valid" response
             if (error == "Invalid JSON response" and 
                 validation_result.get("raw_response") == "Valid"):
                 return True, "✅ Schema validation passed"
             
-            # Handle different error types with friendly messages
+            # handle different error types
             if "timed out" in error.lower():
                 return False, "🕒 API request timed out - please try again"
             elif "curl command failed" in error.lower():
@@ -325,16 +262,16 @@ class KDKMorpher:
             else:
                 return False, f"❌ API Error: {error}"
         
-        # Handle validation errors (schema violations)
+        # handle validation errors
         if "errors" in validation_result and validation_result["errors"]:
             errors = validation_result["errors"]
             error_count = len(errors)
             
-            # Create user-friendly error summary
+            # create nice error summary
             cli_message = f"🔍 Found {error_count} validation error{'s' if error_count > 1 else ''}:\n"
             
-            for i, error in enumerate(errors[:5], 1):  # Show max 5 errors
-                # Clean up error message
+            for i, error in enumerate(errors[:5], 1):  # show max 5 errors
+                # clean up the error message
                 clean_error = self._format_error_message(error)
                 cli_message += f"   {i}. {clean_error}\n"
             
@@ -343,11 +280,11 @@ class KDKMorpher:
             
             return False, cli_message.rstrip()
         
-        # Handle successful validation
+        # handle success
         if validation_result.get("validation_successful", True):
             return True, "✅ Schema validation passed successfully"
         
-        # Default case
+        # default
         return True, "✅ Validation completed"
     
     def _format_error_message(self, error: str) -> str:

@@ -1,6 +1,4 @@
-"""
-KDK JSON Parser - Creates KDK model objects from raw JSON input
-"""
+# KDK JSON parser - creates KDK model objects from raw JSON
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 from ..kdk_model import (
@@ -13,30 +11,30 @@ from ..kdk_model import (
 )
 
 class KDKParser:
-    """Parser to convert raw KDK JSON to KDK model objects."""
+    # parser to convert raw KDK JSON to KDK model objects
     
     def parse(self, raw_json: Dict[str, Any]) -> KDKSchema:
-        """Parse raw JSON into KDK schema object."""
+        # parse raw JSON into KDK schema object
         case_data = raw_json.get("case", {})
         meta_data = raw_json.get("metaData", {})
         plan_data = raw_json.get("plan", {})
         
-        # Create patient from metadata
+        # create patient from metadata
         patient = self._parse_patient(meta_data)
         
-        # Parse diagnoses from case data
+        # parse diagnoses from case data
         diagnoses = self._parse_diagnoses(case_data)
         
-        # Parse HPO terms from case data
+        # parse HPO terms from case data
         hpo_terms = self._parse_hpo_terms(case_data)
         
-        # Parse care plans from plan data
+        # parse care plans from plan data
         care_plans = self._parse_care_plans(plan_data, meta_data)
         
-        # Parse episodes of care
+        # parse episodes of care
         episodes = self._parse_episodes_of_care(meta_data)
         
-        # Parse NGS reports
+        # parse NGS reports
         ngs_reports = self._parse_ngs_reports(case_data, meta_data)
         
         return KDKSchema(

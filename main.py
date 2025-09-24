@@ -1,32 +1,23 @@
-"""
-Metamorph Main - Clean Architecture Implementation
-
-Architecture:
-- models/: Contains model/schema classes and parsers/
-- morphers/: Contains conversion scripts between schemas (e.g., KDKMorpher)  
-- utils/: Contains other methods and classes
-- models/parsers/: Contains parser classes under models
-
-Usage:
-1. KDK(json) -> automatically parses JSON to KDK model
-2. KDKMorpher(kdk_obj, 'RD') -> transforms to X schema )RD schema
-3. Save and validate the result
-"""
+# metamorph main - clean architecture
+# models/: model classes + parsers/
+# morphers/: conversion scripts (KDKMorpher)  
+# utils/: other methods
+# usage: KDK(json) -> KDKMorpher(kdk_obj, 'RD') -> save + validate
 
 import sys
 import os
 from pathlib import Path
 
-# Add src to path
+# add src to path
 sys.path.append(str(Path(__file__).parent / "src"))
 
 from src.metamorph.models.kdk import KDK
 from src.metamorph.morphers.kdk_morpher import KDKMorpher
 
 def main():
-    """Demonstrate the clean architecture with proper organization."""
+    # demo clean architecture
     
-    # Input and output paths  
+    # input and output paths  
     input_file = "sample/confidential/2508261858_Case_250825_E2E2_KDK.json"
     output_file = "output/confidential_output.json"
     
@@ -39,20 +30,20 @@ def main():
     print("=" * 70)
     
     try:
-        # Step 1: Create KDK object (auto-parses JSON to KDK model)
+        # step 1: create KDK object (auto-parses JSON)
         print(f"📖 Step 1: Creating KDK object from {input_file}")
         print("   Using models/parsers/kdk_parser.KDKParser")
-        kdk = KDK(input_file)  # Auto-parsing on instantiation
+        kdk = KDK(input_file)  # auto-parsing on init
         print(f"   ✓ KDK object: {kdk}")
         
-        # Step 2: Create KDKMorpher and transform to target schema
+        # step 2: create KDKMorpher and transform to RD
         print(f"🔄 Step 2: Creating KDKMorpher and transforming to 'RD' schema")
         print("   Using morphers/kdk_morpher.KDKMorpher")
         morpher = KDKMorpher()
-        rd_object = morpher.morph(kdk, 'RD')  # Your exact API request
+        rd_object = morpher.morph(kdk, 'RD')  # your exact API
         print("   ✓ KDK object transformed to RD schema")
         
-        # Step 3: Save the result
+        # step 3: save the result
         print(f"💾 Step 3: Saving RD object to {output_file}")
         save_success = morpher.save(rd_object, output_file)
         if save_success:
@@ -61,7 +52,7 @@ def main():
             print("   ❌ Failed to save RD object")
             return
         
-        # Step 4: Validate against DNPM-DIP API
+        # step 4: validate against API
         print("🔍 Step 4: Validating RD object against DNPM-DIP API")
         print("   Using utils/validate_api.validate_with_api")
         is_valid, message = morpher.validate(rd_object, 'RD')
@@ -71,7 +62,7 @@ def main():
         else:
             print(f"   ❌ Validation FAILED: {message}")
         
-        # Summary
+        # summary
         print("\n" + "=" * 70)
         print("📋 SUMMARY")
         print("=" * 70)
@@ -85,7 +76,7 @@ def main():
         print(f"API validation: {'✅ VALID' if is_valid else '❌ INVALID'}")
         print(f"Your exact API: KDK(json) -> KDKMorpher(kdk_obj, 'RD') ✓")
         
-        # Display architecture details
+        # show architecture details
         print(f"\n📊 Supported target schemas: {morpher.get_supported_schemas()}")
         print(f"🏗️  Clean architecture pattern: {morpher}")
         

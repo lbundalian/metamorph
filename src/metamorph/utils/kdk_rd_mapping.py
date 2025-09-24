@@ -1,17 +1,12 @@
-"""
-KDK to RD Field Mapping Documentation
-
-Based on:
-- KDK (BfArM): https://github.com/dnpm-dip/central-data-node/tree/main/core/src/main/scala/de/dnpm/ccdn/core/bfarm/rd
-- RD (SE-dip): https://ibmi-ut.atlassian.net/wiki/spaces/DRD/pages/1474938/Data+Model+-+SE+dip
-"""
+# KDK to RD field mapping documentation
+# based on KDK (BfArM) and RD (SE-dip) specs
 
 from typing import Dict, List, Any
 
 class KDKRDMapping:
-    """Comprehensive mapping between KDK and RD data structures."""
+    # comprehensive mapping between KDK and RD data structures
     
-    # Patient mapping
+    # patient mapping
     PATIENT_MAPPING = {
         "patient.id": "patient.id",
         "patient.gender.code": "patient.gender.code",
@@ -24,7 +19,7 @@ class KDKRDMapping:
         # KDK doesn't have address/insurance in patient, comes from metadata
     }
     
-    # Diagnosis mapping
+    # diagnosis mapping
     DIAGNOSIS_MAPPING = {
         "diagnoses[].icd10.code": "diagnoses[].codes[0].code",  # ICD-10-GM
         "diagnoses[].icd10.version": "diagnoses[].codes[0].version",
@@ -37,7 +32,7 @@ class KDKRDMapping:
         "diagnoses[].recordedOn": "diagnoses[].recordedOn",
     }
     
-    # HPO Terms mapping
+    # HPO terms mapping
     HPO_MAPPING = {
         "hpoTerms[].value.code": "hpoTerms[].value.code",
         "hpoTerms[].value.version": "hpoTerms[].value.version",
@@ -45,7 +40,7 @@ class KDKRDMapping:
         "hpoTerms[].recordedOn": "hpoTerms[].recordedOn",
     }
     
-    # Care Plan mapping
+    # care plan mapping
     CARE_PLAN_MAPPING = {
         "carePlans[].issuedOn": "carePlans[].issuedOn",
         "carePlans[].geneticCounselingRecommendation": "carePlans[].geneticCounselingRecommended",

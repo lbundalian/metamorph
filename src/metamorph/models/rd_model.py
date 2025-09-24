@@ -3,11 +3,11 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 from .base_model import BaseModel
 
-# SE-dip RD Model based on https://ibmi-ut.atlassian.net/wiki/spaces/DRD/pages/1474938/Data+Model+-+SE+dip
+# SE-dip RD model based on https://ibmi-ut.atlassian.net/wiki/spaces/DRD/pages/1474938/Data+Model+-+SE+dip
 
 @dataclass
 class Code(BaseModel):
-    """Generic code with system, code, version, and display."""
+    # generic code with system, code, version, display
     system: str = ""
     code: str = ""
     version: Optional[str] = None
@@ -15,43 +15,43 @@ class Code(BaseModel):
 
 @dataclass
 class Reference(BaseModel):
-    """Reference to another resource."""
+    # reference to another resource
     id: str = ""
     type: str = ""
 
 @dataclass
 class Period(BaseModel):
-    """Time period with start and end."""
+    # time period with start and end
     start: Optional[str] = None
     end: Optional[str] = None
 
 @dataclass
 class Age(BaseModel):
-    """Age representation."""
+    # age representation
     value: int = 0
     unit: str = "Years"
 
 @dataclass
 class Address(BaseModel):
-    """Patient address information."""
+    # patient address info
     municipalityCode: str = ""
 
 @dataclass
 class HealthInsurance(BaseModel):
-    """Health insurance information."""
+    # health insurance info
     type: Code = field(default_factory=Code)
     reference: Optional[Dict[str, str]] = None
 
 @dataclass
 class VitalStatus(BaseModel):
-    """Patient vital status."""
+    # patient vital status
     code: str = "alive"  # alive, deceased, unknown
     display: str = "Lebend"
     system: str = "dnpm-dip/rd/patient/vital-status"
 
 @dataclass
 class Patient(BaseModel):
-    """Patient information according to SE-dip specification."""
+    # patient info according to SE-dip spec
     id: str = ""
     gender: Code = field(default_factory=Code)
     birthDate: str = ""
@@ -64,7 +64,7 @@ class Patient(BaseModel):
 
 @dataclass
 class Diagnosis(BaseModel):
-    """Diagnosis according to SE-dip specification."""
+    # diagnosis according to SE-dip spec
     id: str = ""
     patient: Reference = field(default_factory=Reference)
     recordedOn: str = ""
@@ -77,7 +77,7 @@ class Diagnosis(BaseModel):
 
 @dataclass
 class HPOTerm(BaseModel):
-    """HPO phenotype term according to SE-dip specification."""
+    # HPO phenotype term according to SE-dip spec
     id: str = ""
     patient: Reference = field(default_factory=Reference)
     recordedOn: str = ""
@@ -87,7 +87,7 @@ class HPOTerm(BaseModel):
 
 @dataclass
 class TherapyRecommendation(BaseModel):
-    """Therapy recommendation according to SE-dip specification."""
+    # therapy recommendation according to SE-dip spec
     id: str = ""
     patient: Reference = field(default_factory=Reference)
     issuedOn: str = ""

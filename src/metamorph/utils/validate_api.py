@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
-"""
-API Validation Script for DNPM-DIP RD Schema
-This script validates transformed JSON files against the DNPM-DIP API endpoint.
-"""
+# API validation script for DNPM-DIP RD schema
+# validates transformed JSON files against DNPM-DIP API endpoint
 
 import json
 import subprocess
@@ -11,23 +9,15 @@ import os
 from pathlib import Path
 
 def validate_with_api(json_file_path: str, api_url: str = "https://preview.dnpm-dip.net/api/rd/etl/patient-record:validate") -> dict:
-    """
-    Validate JSON file against DNPM-DIP API using curl command.
-    
-    Args:
-        json_file_path: Path to the JSON file to validate
-        api_url: API endpoint URL for validation
-        
-    Returns:
-        dict: Validation response from the API
-    """
+    # validate JSON file against DNPM-DIP API using curl
+    # returns validation response from API
     
     if not os.path.exists(json_file_path):
         print(f"Error: File {json_file_path} does not exist")
         return {"error": "File not found"}
     
     try:
-        # Prepare curl command
+        # prepare curl command
         curl_command = [
             "curl",
             "-X", "POST",
@@ -41,13 +31,13 @@ def validate_with_api(json_file_path: str, api_url: str = "https://preview.dnpm-
         print(f"Running: {' '.join(curl_command)}")
         print("-" * 50)
         
-        # Execute curl command
+        # execute curl command
         result = subprocess.run(curl_command, capture_output=True, text=True, timeout=30)
         
         if result.returncode == 0:
             try:
                 response = json.loads(result.stdout)
-                # Check if there are issues (errors)
+                # check if there are issues (errors)
                 if "issues" in response:
                     errors = [issue for issue in response["issues"] if issue.get("severity") == "error"]
                     if errors:

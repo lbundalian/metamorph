@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Test script for KDK to RD transformation using dummy data with API validation.
-"""
+# test KDK to RD transformation with dummy data + API validation
 
 import json
 import sys
@@ -9,7 +7,7 @@ import os
 import subprocess
 from pathlib import Path
 
-# Add src to path so we can import our modules
+# add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from metamorph.morphers.kdk_morpher import KDKMorpher
@@ -17,15 +15,15 @@ from metamorph.models.kdk import KDK
 from metamorph.utils.validate_api import validate_with_api
 
 def load_test_data(filename: str) -> dict:
-    """Load test data from sample/dummy directory."""
+    # load test data from sample/dummy
     file_path = Path(__file__).parent.parent / "sample" / "dummy" / filename
     with open(file_path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 def save_result(data: dict, filename: str, output_dir: str = "output"):
-    """Save transformation result to file."""
+    # save transformation result to file
     output_path = Path(__file__).parent.parent / output_dir / f"transformed_{filename}"
-    # Create output directory if it doesn't exist
+    # create output dir if needed
     output_path.parent.mkdir(exist_ok=True)
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
@@ -33,10 +31,10 @@ def save_result(data: dict, filename: str, output_dir: str = "output"):
     return str(output_path)
 
 def test_transformation():
-    """Test the KDK to RD transformation with dummy data including API validation."""
+    # test KDK to RD transformation with API validation
     print("Starting KDK to RD transformation test with API validation...")
     
-    # Initialize morpher
+    # init morpher
     morpher = KDKMorpher()
     
     # Test with KDK.json
@@ -122,7 +120,7 @@ def test_transformation():
         return False
 
 def test_with_multiple_files():
-    """Test transformation with multiple dummy files including API validation."""
+    # test transformation with multiple files + API validation
     test_files = ["KDK.json"]
     morpher = KDKMorpher()
     
