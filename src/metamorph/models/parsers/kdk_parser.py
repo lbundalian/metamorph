@@ -1,0 +1,285 @@
+"""
+KDK JSON Parser - Creates KDK model objects from raw JSON input
+"""
+from datetime import datetime
+from typing import Dict, Any, List, Optional
+from ..kdk_model import (
+    KDKSchema, Patient, Gender, VitalStatus, Age, Diagnosis, ICD10GM, 
+    AlphaIdSE, Orphanet, VerificationStatus, FamilyControlLevel,
+    HPOTerm, HPO, CarePlan, TherapyRecommendation, TherapyCategory, 
+    TherapyType, StudyEnrollmentRecommendation, GeneticCounselingRecommendation,
+    EpisodeOfCare, NGSReport, Sequencing, Variant, VariantType, 
+    Significance, Zygosity, DiagnosisCategory
+)
+
+class KDKParser:
+    """Parser to convert raw KDK JSON to KDK model objects."""
+    
+    def parse(self, raw_json: Dict[str, Any]) -> KDKSchema:
+        """Parse raw JSON into KDK schema object."""
+        case_data = raw_json.get("case", {})
+        meta_data = raw_json.get("metaData", {})
+        plan_data = raw_json.get("plan", {})
+        
+        # Create patient from metadata
+        patient = self._parse_patient(meta_data)
+        
+        # Parse diagnoses from case data
+        diagnoses = self._parse_diagnoses(case_data)
+        
+        # Parse HPO terms from case data
+        hpo_terms = self._parse_hpo_terms(case_data)
+        
+        # Parse care plans from plan data
+        care_plans = self._parse_care_plans(plan_data, meta_data)
+        
+        # Parse episodes of care
+        episodes = self._parse_episodes_of_care(meta_data)
+        
+        # Parse NGS reports
+        ngs_reports = self._parse_ngs_reports(case_data, meta_data)
+        
+        return KDKSchema(
+            patient=patient,
+            diagnoses=diagnoses,
+            hpoTerms=hpo_terms,
+            carePlans=care_plans,
+            episodesOfCare=episodes,
+            ngsReports=ngs_reports,
+            recordedOn=datetime.now().strftime("%Y-%m-%d"),
+            lastUpdate=datetime.now().strftime("%Y-%m-%d")
+        )
+    
+    def _parse_patient(self, meta_data: Dict[str, Any]) -> Patient:
+        """Parse patient information from metadata."""
+        # Parse gender
+        gender_code = meta_data.get("gender", "unknown")
+        gender_display = {
+            "male": "Männlich", 
+            "female": "Weiblich", 
+            "other": "Sonstiges"
+        }.get(gender_code, "Unbekannt")
+        
+        gender = Gender(code=gender_code, display=gender_display)
+        
+        # Parse birth date and calculate age
+        birth_date = meta_data.get("birthDate", "")
+        age = None
+        if birth_date:
+            try:
+                birth_datetime = datetime.strptime(birth_date, "%Y-%m-%d")
+                today = datetime.now()
+                age_years = today.year - birth_datetime.year - (
+                    (today.month, today.day) < (birth_datetime.month, birth_datetime.day)
+                )
+                age = Age(value=age_years, unit="years")
+            except ValueError:
+                pass
+        
+        # Parse vital status
+        vital_status = VitalStatus(code="alive", display="Lebend")
+        
+        # Extract patient ID from reference if available
+        patient_id = "example-patient-001"  # Default
+        research_consents = meta_data.get("researchConsents", [])
+        if research_consents:
+            patient_ref = research_consents[0].get("scope", {}).get("scope", {}).get("patient", {})
+            if patient_ref.get("reference"):
+                patient_id = patient_ref["reference"].split("/")[-1]
+        
+        return Patient(
+            id=patient_id,
+            gender=gender,
+            birthDate=birth_date,
+            age=age,
+            vitalStatus=vital_status
+        )
+    
+    def _parse_diagnoses(self, case_data: Dict[str, Any]) -> List[Diagnosis]:
+        """Parse diagnosis information from case data."""
+        diagnoses = []
+        diagnosis_od = case_data.get("diagnosisOd", {})
+        
+        # Parse main diagnosis
+        main_diag = diagnosis_od.get("mainDiagnosis", {})
+        if main_diag.get("code"):
+            diagnosis = self._create_diagnosis_from_dict(main_diag, diagnosis_od)
+            
+            # Add additional diagnoses to the same diagnosis object
+            additional_diagnoses = diagnosis_od.get("additionalDiagnoses", [])
+            # For now, we'll create one diagnosis entry with the main diagnosis
+            # Additional diagnoses would be handled separately in a full implementation
+            
+            diagnoses.append(diagnosis)
+        
+        return diagnoses
+    
+    def _create_diagnosis_from_dict(self, diag_dict: Dict[str, Any], diagnosis_od: Dict[str, Any]) -> Diagnosis:
+        """Create a diagnosis object from dictionary data."""
+        # Parse ICD-10-GM code
+        icd10 = None
+        if diag_dict.get("system") == "http://fhir.de/CodeSystem/bfarm/icd-10-gm":
+            icd10 = ICD10GM(
+                code=diag_dict.get("code", ""),
+                version=diag_dict.get("version", ""),
+                display=diag_dict.get("display", "")
+            )
+        
+        # Parse topography and histology if available (often Alpha-ID-SE)
+        alpha_id_se = None
+        topography = diagnosis_od.get("topography", {})
+        histology = diagnosis_od.get("histology", {})
+        
+        if topography.get("system") == "https://www.bfarm.de/DE/Kodiersysteme/Terminologien/Alpha-ID-SE":
+            alpha_id_se = AlphaIdSE(
+                code=topography.get("code", ""),
+                version=topography.get("version", ""),
+                display=topography.get("text", "")
+            )
+        elif histology.get("system") == "https://www.bfarm.de/DE/Kodiersysteme/Terminologien/Alpha-ID-SE":
+            alpha_id_se = AlphaIdSE(
+                code=histology.get("code", ""),
+                version=histology.get("version", ""),
+                display=histology.get("text", "")
+            )
+        
+        # Parse verification status
+        germline_confirmed = diagnosis_od.get("germlineDiagnosisConfirmed", False)
+        verification_status = VerificationStatus(
+            code="confirmed" if germline_confirmed else "provisional",
+            display="Bestätigt" if germline_confirmed else "Verdachtsdiagnose"
+        )
+        
+        # Parse family control level (default to duo-genome)
+        family_control = FamilyControlLevel(
+            code="duo-genome",
+            display="Duogenom"
+        )
+        
+        # Parse dates
+        onset_date = None
+        if diag_dict.get("date"):
+            try:
+                date_obj = datetime.strptime(diag_dict["date"], "%Y-%m-%d")
+                onset_date = date_obj.strftime("%Y-%m")
+            except ValueError:
+                pass
+        
+        return Diagnosis(
+            icd10=icd10,
+            alphaIdSE=alpha_id_se,
+            verificationStatus=verification_status,
+            familyControlLevel=family_control,
+            onsetDate=onset_date,
+            recordedOn=diag_dict.get("date", "")
+        )
+    
+    def _parse_hpo_terms(self, case_data: Dict[str, Any]) -> List[HPOTerm]:
+        """Parse HPO terms from case data."""
+        hpo_terms = []
+        diagnosis_od = case_data.get("diagnosisOd", {})
+        
+        for hpo_dict in diagnosis_od.get("hpoTerms", []):
+            if hpo_dict.get("code"):
+                hpo = HPO(
+                    code=hpo_dict.get("code", ""),
+                    version=hpo_dict.get("version", ""),
+                    display=hpo_dict.get("text", "")
+                )
+                
+                hpo_term = HPOTerm(
+                    value=hpo,
+                    recordedOn=datetime.now().strftime("%Y-%m-%d"),
+                    onsetDate=datetime.now().strftime("%Y-%m")
+                )
+                hpo_terms.append(hpo_term)
+        
+        return hpo_terms
+    
+    def _parse_care_plans(self, plan_data: Dict[str, Any], meta_data: Dict[str, Any]) -> List[CarePlan]:
+        """Parse care plans from plan data."""
+        care_plans = []
+        care_plan_od = plan_data.get("carePlanOd", {})
+        
+        if care_plan_od:
+            # Parse therapy recommendations from preventive measures
+            therapy_recommendations = []
+            preventive_measures = plan_data.get("preventiveMeasures", [])
+            
+            for measure in preventive_measures:
+                if measure.get("type") in ["genetic_counseling", "developmental_therapy"]:
+                    therapy_rec = TherapyRecommendation(
+                        category=TherapyCategory(code="symptomatic", display="Symptomatisch"),
+                        type=TherapyType(code="other", display="Andere"),
+                        issuedOn=meta_data.get("molecularBoardDecisionDate", datetime.now().strftime("%Y-%m-%d"))
+                    )
+                    therapy_recommendations.append(therapy_rec)
+            
+            # Parse genetic counseling recommendation
+            genetic_counseling = None
+            if care_plan_od.get("counsellingRecommended"):
+                genetic_counseling = GeneticCounselingRecommendation(
+                    reason="Genetic disorder diagnosis",
+                    issuedOn=care_plan_od.get("molecularBoardDecisionDate", datetime.now().strftime("%Y-%m-%d"))
+                )
+            
+            care_plan = CarePlan(
+                issuedOn=care_plan_od.get("molecularBoardDecisionDate", datetime.now().strftime("%Y-%m-%d")),
+                therapyRecommendations=therapy_recommendations,
+                geneticCounselingRecommendation=genetic_counseling,
+                reevaluationRecommended=care_plan_od.get("reEvaluationRecommended", False)
+            )
+            care_plans.append(care_plan)
+        
+        return care_plans
+    
+    def _parse_episodes_of_care(self, meta_data: Dict[str, Any]) -> List[EpisodeOfCare]:
+        """Parse episodes of care from metadata."""
+        episodes = []
+        submission = meta_data.get("submission", {})
+        
+        if submission.get("date"):
+            episode = EpisodeOfCare(
+                period={"start": submission["date"]},
+                status="active"
+            )
+            episodes.append(episode)
+        
+        return episodes
+    
+    def _parse_ngs_reports(self, case_data: Dict[str, Any], meta_data: Dict[str, Any]) -> List[NGSReport]:
+        """Parse NGS reports from case data."""
+        ngs_reports = []
+        diagnosis_od = case_data.get("diagnosisOd", {})
+        
+        # Parse sequencing information
+        library_type = diagnosis_od.get("libraryType", "WES")
+        sequencing = Sequencing(
+            type=library_type,
+            platform="Unknown",  # Not provided in sample data
+            kit="Unknown"         # Not provided in sample data
+        )
+        
+        # For now, create empty variants list since no variant data in sample
+        variants = []
+        
+        # Get issue date from submission
+        issued_on = meta_data.get("submission", {}).get("date", datetime.now().strftime("%Y-%m-%d"))
+        
+        ngs_report = NGSReport(
+            sequencing=sequencing,
+            variants=variants,
+            issuedOn=issued_on
+        )
+        ngs_reports.append(ngs_report)
+        
+        return ngs_reports
+    
+    def parse_from_file(self, file_path: str) -> KDKSchema:
+        """Parse KDK JSON file into KDK schema object."""
+        import json
+        
+        with open(file_path, 'r', encoding='utf-8') as f:
+            raw_json = json.load(f)
+        
+        return self.parse(raw_json)

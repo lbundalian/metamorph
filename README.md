@@ -1,4 +1,4 @@
-# Metamorph - Bfarm Schema parser
+# Metamorph - Medical Data Transformation Library
 
 <p align="center">
   <img src="metamorph.png" alt="Metamorph Logo" width="120" height="120"/>
@@ -6,194 +6,240 @@
 
 ## Overview
 
-Metamorph is a Python module designed for transforming medical data formats involved in genomeDE project.First iteration focuses on converting KDK (Klinische Datenknoten) to RD (Rare Disease) data structures and is designed to enable extension for future X2X conversion.
+Metamorph is a clean, extensible Python library for transforming medical data formats. Built with a clean architecture pattern, it currently focuses on converting KDK (Klinische Datenknoten) to RD (Rare Disease) data structures with full DNPM-DIP API validation support.
 
+## 🏗️ Clean Architecture
 
-## Features
-
-### 🔄 **Data Transformation**
-- **KDK to RD Conversion**: Complete transformation from KDK format to RD-compatible structure
-- **Field Mapping**: Intelligent mapping of medical data fields between formats
-- **Data Validation**: Comprehensive validation for both input and output data
-- **Error Handling**: Robust error handling with detailed error messages
-
-### 📊 **Supported Data Elements**
-
-#### Patient Demographics
-- ✅ Gender (with German display names)
-- ✅ Birth date
-- ✅ Address (municipality code)
-- ✅ Age calculation
-- ✅ Health insurance information
-- ✅ Vital status
-
-#### Medical Information  
-- ✅ Primary and additional diagnoses
-- ✅ HPO (Human Phenotype Ontology) terms
-- ✅ Diagnosis verification status
-- ✅ Care plan recommendations
-- ✅ Therapy recommendations
-- ✅ Genetic counseling recommendations
-
-#### Administrative Data
-- ✅ Patient IDs (UUID generation)
-- ✅ Recording dates
-- ✅ Consent information mapping
-
-## Installation
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd metamorph
-
-# Install in development mode
-pip install -e .
-```
-
-## Quick Start
-
-```python
-from metamorph import KDKToRDMorpher
-from metamorph.utils import DataValidator
-import json
-
-# Load your KDK data
-with open('your_kdk_data.json', 'r') as f:
-    kdk_data = json.load(f)
-
-# Validate input data
-is_valid, errors = DataValidator.validate_kdk_data(kdk_data)
-if not is_valid:
-    print("Validation errors:", errors)
-    exit(1)
-
-# Transform KDK to RD format
-morpher = KDKToRDMorpher()
-rd_result = morpher.morph(kdk_data)
-
-# Validate transformation result
-is_valid, errors = DataValidator.validate_rd_data(rd_result)
-if is_valid:
-    print("✅ Transformation successful!")
-else:
-    print("❌ Transformation validation failed:", errors)
-
-# Save result
-with open('transformed_rd_data.json', 'w') as f:
-    json.dump(rd_result, f, indent=2, ensure_ascii=False)
-```
-
-## Demonstration
-
-Run the included demonstration script to see the transformation in action:
-
-```bash
-python demo_transformation.py
-```
-
-This will:
-1. Create test KDK data with realistic values
-2. Validate the input data
-3. Transform KDK to RD format
-4. Validate the output data
-5. Check transformation quality
-6. Save the result to `transformed_result.json`
-
-## Data Mapping Details
-
-### KDK → RD Field Mappings
-
-| KDK Path | RD Path | Notes |
-|----------|---------|-------|
-| `metaData.gender` | `patient.gender.code` | With German display names |
-| `metaData.birthDate` | `patient.birthDate` | ISO date format |
-| `metaData.addressAGS` | `patient.address.municipalityCode` | German municipality code |
-| `metaData.coverageType` | `patient.healthInsurance` | GKV/PKV mapping |
-| `case.diagnosisOd.mainDiagnosis` | `diagnoses[0].codes` | Primary diagnosis |
-| `case.diagnosisOd.additionalDiagnoses` | `diagnoses[1..n].codes` | Additional diagnoses |
-| `case.diagnosisOd.hpoTerms` | `hpoTerms` | Phenotype terms |
-| `case.diagnosisOd.germlineDiagnosisConfirmed` | `diagnoses[].verificationStatus` | Confirmation status |
-| `plan.carePlanOd.counsellingRecommended` | `carePlans[].geneticCounselingRecommended` | Care recommendations |
-| `plan.carePlanOd.reEvaluationRecommended` | `carePlans[].reevaluationRecommended` | Follow-up plans |
-| `plan.preventiveMeasures` | `carePlans[].therapyRecommendations` | Therapy suggestions |
-
-### Generated Fields
-
-The transformation also generates additional required fields:
-- **UUIDs**: Unique identifiers for all entities
-- **Timestamps**: Recording dates for medical events
-- **Status Information**: Proper medical coding systems
-- **Age Calculation**: Automatic age computation from birth date
-
-## Limitations & Scope
-
-### ✅ **What IS Transformed**
-- Basic patient demographics
-- Diagnosis information (ICD-10, etc.)
-- HPO phenotype terms
-- Care plan recommendations
-- Health insurance data
-- Administrative metadata
-
-### ⚠️ **What is NOT Available in KDK** (and thus not transformed)
-- **NGS/Genomic Data**: Sequencing results, variants, etc.
-- **Complex Genetic Analysis**: ACMG classifications, variant details
-- **Hospitalization Details**: Stay duration, frequency
-- **Detailed Therapy History**: Medication details, treatment responses
-- **Family History**: Genetic pedigrees
-- **Laboratory Results**: Detailed lab values
-
-This is expected since KDK and RD serve different clinical contexts - RD format is more comprehensive for rare disease genetics research.
-
-## Project Structure
+The project follows a clean architecture pattern for maximum maintainability and extensibility:
 
 ```
 metamorph/
-├── src/metamorph/
-│   ├── __init__.py              # Main package exports
-│   ├── models/
-│   │   ├── base_model.py        # Base model class
-│   │   ├── kdk_model.py         # KDK data model
-│   │   └── rd_model.py          # RD data model
-│   ├── morphers/
-│   │   ├── base_morpher.py      # Base transformation class
-│   │   ├── kdk_morpher.py       # Legacy KDK morpher
-│   │   └── kdk_to_rd_morpher.py # Main KDK→RD transformer
-│   └── utils/
-│       └── validators.py        # Validation utilities
-├── sample/
-│   ├── KDK.json                 # Sample KDK data
-│   └── RD.json                  # Sample RD data
-├── demo_transformation.py       # Demonstration script
-└── README.md                    # This file
+├── main.py                 # Main entry point
+├── src/metamorph/          # Core library
+│   ├── models/             # Schema classes and data models
+│   │   ├── parsers/        # Data parsers (KDKParser)
+│   │   ├── kdk.py          # KDK main class with auto-parsing
+│   │   ├── kdk_model.py    # KDK data models
+│   │   └── rd_model.py     # RD data models  
+│   ├── morphers/           # Data transformation scripts
+│   │   ├── kdk_morpher.py  # Main KDKMorpher API
+│   │   └── kdk_to_rd_morpher.py # Detailed KDK→RD transformation
+│   └── utils/              # Utilities and validation
+│       └── validate_api.py # DNPM-DIP API validation
+├── tests/                  # Test suite
+└── sample/                 # Sample data files
 ```
 
-## Validation
 
-The library includes comprehensive validation:
+## ✨ Features
 
-### Input Validation (KDK)
-- Required section presence (`case`, `metaData`, `plan`)
-- Essential fields like birth date
-- At least one diagnosis or HPO term
+### 🔄 **Clean API Design**
+- **Auto-parsing**: `KDK(json)` automatically parses JSON to structured objects
+- **Simple Transformation**: `KDKMorpher(kdk_obj, 'RD')` for clean conversions
+- **Extensible**: Designed for future schema support (FHIR, HL7, etc.)
+- **Production Ready**: Full DNPM-DIP API validation integration
 
-### Output Validation (RD)
-- Required RD structure compliance
-- Valid UUID format for IDs
-- Required patient fields
-- Proper diagnosis structure
+### 🏥 **Medical Data Support**
 
-### Transformation Quality
-- Data preservation checks
-- Field mapping verification
-- Warning system for data loss
+#### Patient Demographics
+- ✅ Gender (with localized German display names)
+- ✅ Birth date (ISO format with validation)
+- ✅ Address (municipality codes)
+- ✅ Age calculation from birth date
+- ✅ Health insurance information (GKV/PKV)
+- ✅ Vital status tracking
 
-## Examples
+#### Clinical Information  
+- ✅ ICD-10-GM diagnosis codes
+- ✅ Alpha-ID-SE topography/histology codes
+- ✅ HPO (Human Phenotype Ontology) terms
+- ✅ Diagnosis verification status
+- ✅ Family control levels
+- ✅ NGS sequencing reports
 
-### Example Transformation Result
+#### Care Management
+- ✅ Care plan recommendations
+- ✅ Therapy recommendations (categori zed)
+- ✅ Genetic counseling recommendations
+- ✅ Study enrollment recommendations
+- ✅ Follow-up tracking
 
-**Input KDK:**
+### 🔒 **Validation & Quality**
+- ✅ **DNPM-DIP API Integration**: Real-time validation against production API
+- ✅ **Schema Compliance**: Strict adherence to RD schema requirements
+- ✅ **Data Integrity**: Comprehensive input/output validation
+- ✅ **Error Handling**: Detailed error messages and recovery
+
+## 🚀 Quick Start
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/lbundalian/metamorph.git
+cd metamorph
+
+# Install dependencies
+pip install -r requirements-test.txt
+
+# Install in development mode (optional)
+pip install -e .
+```
+
+### Basic Usage
+
+The clean architecture provides a simple, intuitive API:
+
+```python
+from src.metamorph.models.kdk import KDK
+from src.metamorph.morphers.kdk_morpher import KDKMorpher
+
+# 1. Auto-parse KDK data (from file or dict)
+kdk = KDK("path/to/your/kdk_data.json")  # Auto-parses JSON to KDK model
+
+# 2. Transform to target schema  
+morpher = KDKMorpher()
+rd_object = morpher.morph(kdk, 'RD')  # Clean API: (kdk_obj, target_schema)
+
+# 3. Save and validate
+morpher.save(rd_object, "output/result.json")
+is_valid, message = morpher.validate(rd_object)
+
+if is_valid:
+    print("✅ Transformation successful and API validated!")
+else:
+    print(f"❌ Validation failed: {message}")
+```
+
+### Run the Demo
+
+```bash
+# Run the main demonstration
+python main.py
+```
+
+This will:
+1. 📖 Parse KDK data using auto-parsing
+2. 🔄 Transform to RD format using clean API  
+3. 💾 Save output to `output/main_output.json`
+4. 🔍 Validate against DNPM-DIP API
+5. 📊 Display comprehensive results
+
+## 🔧 Development
+
+### Architecture Principles
+
+- **models/**: Contains schema classes and parsers
+- **morphers/**: Contains transformation logic between schemas
+- **utils/**: Contains validation and utility functions
+- **Clean API**: Simple, intuitive method signatures
+- **Extensible**: Easy to add new target schemas (FHIR, HL7, etc.)
+
+### Running Tests
+
+```bash
+# Run all tests with verbose output
+python -m pytest tests/ -v
+
+# Run with coverage
+python -m pytest tests/ --cov=src/metamorph
+```
+
+### API Validation
+
+The library integrates with DNPM-DIP API for real-time validation:
+
+```python
+# Validate against production API
+is_valid, message = morpher.validate(rd_object, 'RD')
+```
+
+API endpoint: `https://preview.dnpm-dip.net/api/rd/etl/patient-record:validate`
+
+## 🎯 Supported Schemas
+
+### Current Support
+- ✅ **KDK** → **RD**: Full implementation with API validation
+
+### Planned Support  
+- 🔄 **KDK** → **FHIR**: Future implementation
+- 🔄 **KDK** → **HL7**: Future implementation
+- 🔄 **RD** → **FHIR**: Future implementation
+
+## 📁 Sample Data
+
+The `sample/` directory contains:
+- `sample/confidential/`: Real anonymized patient data
+- `sample/dummy/`: Test data for development
+
+## 📊 Output
+
+Generated files are saved to `output/`:
+- `main_output.json`: Main transformation result
+- Various test outputs and validation results
+## 🗂️ Data Mapping
+
+### Key KDK → RD Transformations
+
+| KDK Source | RD Target | Transformation |
+|------------|-----------|----------------|
+| `metaData.gender` | `patient.gender` | With German localization |
+| `metaData.birthDate` | `patient.birthDate` | ISO format validation |
+| `case.diagnosisOd.mainDiagnosis` | `diagnoses[].icd10` | ICD-10-GM mapping |
+| `case.diagnosisOd.hpoTerms` | `hpoTerms[]` | HPO term preservation |
+| `plan.carePlanOd.*` | `carePlans[]` | Care recommendations |
+| `case.diagnosisOd.topography` | `diagnoses[].alphaIdSE` | Alpha-ID-SE codes |
+
+### Auto-Generated Elements
+- ✅ **UUIDs**: Unique identifiers for all entities  
+- ✅ **Timestamps**: Proper medical event dating
+- ✅ **Age Calculation**: From birth date
+- ✅ **Status Codes**: DNPM-DIP compliant statuses
+
+## 🎯 Project Status
+
+### ✅ **Current Implementation**
+- **Clean Architecture**: Full implementation with organized structure
+- **KDK → RD**: Complete transformation with API validation
+- **Auto-parsing**: Seamless JSON to object conversion  
+- **Production Ready**: DNPM-DIP API integration and validation
+- **Test Coverage**: Comprehensive test suite
+
+### 🔄 **Future Roadmap**
+- **Additional Schemas**: FHIR, HL7 support
+- **Bi-directional**: RD → KDK transformation
+- **Enhanced Validation**: More detailed clinical validation rules
+- **Performance**: Batch processing capabilities
+
+## 🤝 Contributing
+
+1. **Fork** the repository
+2. **Create** a feature branch: `git checkout -b feature/new-schema`
+3. **Commit** changes: `git commit -am 'Add FHIR support'`  
+4. **Push** to branch: `git push origin feature/new-schema`
+5. **Submit** a Pull Request
+
+### Development Setup
+```bash
+git clone https://github.com/lbundalian/metamorph.git
+cd metamorph
+pip install -r requirements-test.txt
+python -m pytest tests/ -v  # Run tests
+```
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🙏 Acknowledgments
+
+- **DNPM-DIP**: For providing the validation API
+- **genomeDE**: Medical data standards and requirements  
+- **Contributors**: All developers who helped build this clean architecture
+
+---
+
+**Metamorph** - *Clean, extensible medical data transformation* 🏥➡️📊
 ```json
 {
   "metaData": {

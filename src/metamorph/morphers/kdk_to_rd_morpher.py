@@ -79,8 +79,16 @@ class KDKToRDMorpher(BaseMorpher):
                     parsed_date = datetime.strptime(birth_date, "%Y/%m/%d")
                     birth_date = parsed_date.strftime("%Y-%m-%d")
                 except ValueError:
-                    # If all parsing fails, leave as is but ensure string type
-                    birth_date = str(birth_date)
+                    try:
+                        # Try YYYY-MM format and add day
+                        parsed_date = datetime.strptime(birth_date, "%Y-%m")
+                        birth_date = parsed_date.strftime("%Y-%m-01")  # Add first day of month
+                    except ValueError:
+                        # If all parsing fails, set to null/empty for API compliance
+                        birth_date = None
+        else:
+            # If no birth date provided, set to None for API compliance
+            birth_date = None
         
         # Calculate age
         age = None
