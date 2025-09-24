@@ -1,0 +1,271 @@
+{
+  "metaData": {
+    "submission": {
+      "date": "2025-09-24",
+      "type": "initial",
+      "submitterId": "RD-SUB-2025-001",
+      "genomicDataCenterId": "GRZ001001",
+      "clinicalDataNodeId": "KDK001001",
+      "diseaseType": "rare"
+    },
+    "mvConsent": {
+      "presentationDate": "2025-09-20",
+      "version": "Patient Info TE Consent MVGenomSeq vers01",
+      "scope": [
+        {
+          "type": "permit",
+          "date": "2025-09-20",
+          "domain": "mvSequencing"
+        },
+        {
+          "type": "permit",
+          "date": "2025-09-20",
+          "domain": "reIdentification"
+        },
+        {
+          "type": "permit",
+          "date": "2025-09-20",
+          "domain": "caseIdentification"
+        }
+      ]
+    },
+    "researchConsents": [
+      {
+        "schemaVersion": "2025.0.1",
+        "presentationDate": "2025-09-20",
+        "scope": {
+          "provision": {
+            "type": "permit",
+            "period": {
+              "start": "2025-09-20",
+              "end": "2035-09-20"
+            },
+            "provision": []
+          }
+        }
+      }
+    ],
+    "coverageType": "GKV",
+    "tanC": "AOK123456789",
+    "localCaseId": "RD-CASE-2025-001",
+    "gender": "female",
+    "birthDate": "1990-05",
+    "addressAGS": "01001000",
+    "decisionToInclude": true,
+    "molecularBoardDecisionDate": "2025-09-22"
+  },
+  "case": {
+    "diagnosisRd": {
+      "phenotypes": [
+        {
+          "code": "HP:0001250",
+          "system": "http://purl.obolibrary.org/obo/hp.owl",
+          "version": "2024-08-13",
+          "display": "Seizure",
+          "text": "Patient experiences recurrent seizures since childhood"
+        },
+        {
+          "code": "HP:0001263",
+          "system": "http://purl.obolibrary.org/obo/hp.owl",
+          "version": "2024-08-13",
+          "display": "Global developmental delay",
+          "text": "Significant delay in cognitive and motor development"
+        },
+        {
+          "code": "HP:0000252",
+          "system": "http://purl.obolibrary.org/obo/hp.owl",
+          "version": "2024-08-13",
+          "display": "Microcephaly",
+          "text": "Head circumference below 2nd percentile"
+        }
+      ],
+      "symptomOnsetDate": "1992-03",
+      "molecularBoardDecisionDate": "2025-09-22",
+      "diagnosticExtent": "trioGenome",
+      "libraryType": "wgs",
+      "diagnosticAssessment": "confirmedGeneticDiagnosis",
+      "diagnoses": [
+        {
+          "code": "Q87.8",
+          "system": "http://fhir.de/CodeSystem/bfarm/icd-10-gm",
+          "version": "2025",
+          "display": "Sonstige näher bezeichnete angeborene Fehlbildungssyndrome, anderenorts nicht klassifiziert"
+        },
+        {
+          "code": "ORPHA:199373",
+          "system": "http://www.orpha.net",
+          "version": "4.4",
+          "display": "Dravet syndrome"
+        },
+        {
+          "code": "XE0YH",
+          "system": "https://www.bfarm.de/DE/Kodiersysteme/Terminologien/Alpha-ID-SE",
+          "version": "2025",
+          "display": "Dravet-Syndrom"
+        }
+      ],
+      "noMatchingCodeExists": false,
+      "diagnosisGmfcs": "III"
+    },
+    "priorRds": [
+      {
+        "genomicTestType": "panel",
+        "genomicStudyType": "diagnostic",
+        "diagnosticResult": "inconclusive",
+        "hospitalizationPeriods": 5,
+        "hospitalizationDuration": 45,
+        "zseContactDate": "2020-01"
+      }
+    ]
+  },
+  "molecular": {
+    "variants": [
+      {
+        "identifier": {
+          "value": "VAR-001",
+          "system": "local"
+        },
+        "chromosome": "2",
+        "position": {
+          "start": 166848646,
+          "end": 166848646,
+          "reference": "GRCh38"
+        },
+        "gene": {
+          "code": "SCN1A",
+          "system": "https://www.genenames.org/",
+          "version": "2024-09",
+          "display": "sodium voltage-gated channel alpha subunit 1A"
+        },
+        "transcript": "NM_001165963.4",
+        "dnaChange": "c.3199G>A",
+        "proteinChange": "p.Glu1067Lys",
+        "zygosity": "heterozygous",
+        "classification": {
+          "acmg": "pathogenic",
+          "evidence": [
+            "PS1",
+            "PM1",
+            "PM2",
+            "PP3"
+          ]
+        },
+        "inheritance": "de_novo",
+        "cosegregation": "not_applicable",
+        "functionalAnalysis": "damaging",
+        "publications": [
+          {
+            "pmid": "12345678",
+            "title": "SCN1A mutations in Dravet syndrome"
+          }
+        ]
+      }
+    ],
+    "copyNumberVariants": [],
+    "structuralVariants": [],
+    "pharmacogenomics": [
+      {
+        "gene": "CYP2C19",
+        "variants": [
+          "*1/*2"
+        ],
+        "phenotype": "intermediate_metabolizer",
+        "medications": [
+          "clobazam"
+        ]
+      }
+    ]
+  },
+  "plan": {
+    "carePlanRd": {
+      "identifier": {
+        "value": "CP-RD-2025-001",
+        "system": "local"
+      },
+      "counsellingRecommended": true,
+      "reEvaluationRecommended": true,
+      "studyRecommended": true,
+      "interventionRecommended": true,
+      "molecularBoardDecisionDate": "2025-09-22"
+    },
+    "recommendedStudies": [
+      {
+        "identifier": {
+          "value": "STUDY-001",
+          "system": "local"
+        },
+        "register": "NCT",
+        "name": "Precision Medicine Approach in Dravet Syndrome",
+        "id": "NCT05123456",
+        "variants": [
+          {
+            "value": "VAR-001",
+            "system": "local"
+          }
+        ]
+      }
+    ],
+    "recommendedTherapies": [
+      {
+        "identifier": {
+          "value": "THERAPY-001",
+          "system": "local"
+        },
+        "type": "symptomatic",
+        "strategy": "targetedMedication",
+        "variants": [
+          {
+            "value": "VAR-001",
+            "system": "local"
+          }
+        ]
+      },
+      {
+        "identifier": {
+          "value": "THERAPY-002",
+          "system": "local"
+        },
+        "type": "symptomatic",
+        "strategy": "preventionMedication",
+        "variants": [
+          {
+            "value": "VAR-001",
+            "system": "local"
+          }
+        ]
+      }
+    ]
+  },
+  "followUp": {
+    "followUpDate": "2026-03-24",
+    "status": "active",
+    "outcomes": [
+      {
+        "parameter": "seizure_frequency",
+        "value": "2_per_month",
+        "unit": "episodes",
+        "date": "2025-09-24"
+      },
+      {
+        "parameter": "developmental_progress",
+        "value": "stable",
+        "unit": "assessment",
+        "date": "2025-09-24"
+      }
+    ],
+    "adherence": {
+      "medication": "good",
+      "appointments": "excellent",
+      "lifestyle": "good"
+    },
+    "adverseEvents": [
+      {
+        "event": "mild_drowsiness",
+        "severity": "grade_1",
+        "relation": "probable",
+        "medication": "clobazam",
+        "date": "2025-08-15"
+      }
+    ]
+  }
+}

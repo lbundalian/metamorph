@@ -9,7 +9,7 @@ Architecture:
 
 Usage:
 1. KDK(json) -> automatically parses JSON to KDK model
-2. KDKMorpher(kdk_obj, 'RD') -> transforms to RD schema
+2. KDKMorpher(kdk_obj, 'RD') -> transforms to X schema )RD schema
 3. Save and validate the result
 """
 
@@ -26,9 +26,9 @@ from src.metamorph.morphers.kdk_morpher import KDKMorpher
 def main():
     """Demonstrate the clean architecture with proper organization."""
     
-    # Input and output paths
+    # Input and output paths  
     input_file = "sample/confidential/2508261858_Case_250825_E2E2_KDK.json"
-    output_file = "output/main_output.json"
+    output_file = "output/confidential_output.json"
     
     print("🚀 Metamorph - Clean Architecture Implementation")
     print("=" * 70)

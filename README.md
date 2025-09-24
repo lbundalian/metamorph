@@ -22,8 +22,7 @@ metamorph/
 │   │   ├── kdk_model.py    # KDK data models
 │   │   └── rd_model.py     # RD data models  
 │   ├── morphers/           # Data transformation scripts
-│   │   ├── kdk_morpher.py  # Main KDKMorpher API
-│   │   └── kdk_to_rd_morpher.py # Detailed KDK→RD transformation
+│   │   └── kdk_morpher.py  # Main KDKMorpher API (clean architecture)
 │   └── utils/              # Utilities and validation
 │       └── validate_api.py # DNPM-DIP API validation
 ├── tests/                  # Test suite

@@ -116,7 +116,7 @@ class KDKParser:
     
     def _create_diagnosis_from_dict(self, diag_dict: Dict[str, Any], diagnosis_od: Dict[str, Any]) -> Diagnosis:
         """Create a diagnosis object from dictionary data."""
-        # Parse ICD-10-GM code
+        # Parse ICD-10-GM code from main diagnosis
         icd10 = None
         if diag_dict.get("system") == "http://fhir.de/CodeSystem/bfarm/icd-10-gm":
             icd10 = ICD10GM(
@@ -125,23 +125,48 @@ class KDKParser:
                 display=diag_dict.get("display", "")
             )
         
-        # Parse topography and histology if available (often Alpha-ID-SE)
-        alpha_id_se = None
-        topography = diagnosis_od.get("topography", {})
-        histology = diagnosis_od.get("histology", {})
+        # Parse Orphanet code from additional diagnoses
+        orphanet = None
+        additional_diagnoses = diagnosis_od.get("additionalDiagnoses", [])
+        for add_diag in additional_diagnoses:
+            if add_diag.get("system") == "http://www.orpha.net" or add_diag.get("system") == "https://www.orpha.net":
+                orphanet = Orphanet(
+                    code=add_diag.get("code", ""),
+                    version=add_diag.get("version", ""),
+                    display=add_diag.get("display", "")
+                )
+                break
         
-        if topography.get("system") == "https://www.bfarm.de/DE/Kodiersysteme/Terminologien/Alpha-ID-SE":
-            alpha_id_se = AlphaIdSE(
-                code=topography.get("code", ""),
-                version=topography.get("version", ""),
-                display=topography.get("text", "")
-            )
-        elif histology.get("system") == "https://www.bfarm.de/DE/Kodiersysteme/Terminologien/Alpha-ID-SE":
-            alpha_id_se = AlphaIdSE(
-                code=histology.get("code", ""),
-                version=histology.get("version", ""),
-                display=histology.get("text", "")
-            )
+        # Parse Alpha-ID-SE code from additional diagnoses, topography, or histology
+        alpha_id_se = None
+        
+        # First check additional diagnoses
+        for add_diag in additional_diagnoses:
+            if add_diag.get("system") == "https://www.bfarm.de/DE/Kodiersysteme/Terminologien/Alpha-ID-SE":
+                alpha_id_se = AlphaIdSE(
+                    code=add_diag.get("code", ""),
+                    version=add_diag.get("version", ""),
+                    display=add_diag.get("display", "")
+                )
+                break
+        
+        # If not found in additional diagnoses, check topography and histology
+        if not alpha_id_se:
+            topography = diagnosis_od.get("topography", {})
+            histology = diagnosis_od.get("histology", {})
+            
+            if topography.get("system") == "https://www.bfarm.de/DE/Kodiersysteme/Terminologien/Alpha-ID-SE":
+                alpha_id_se = AlphaIdSE(
+                    code=topography.get("code", ""),
+                    version=topography.get("version", ""),
+                    display=topography.get("text", "")
+                )
+            elif histology.get("system") == "https://www.bfarm.de/DE/Kodiersysteme/Terminologien/Alpha-ID-SE":
+                alpha_id_se = AlphaIdSE(
+                    code=histology.get("code", ""),
+                    version=histology.get("version", ""),
+                    display=histology.get("text", "")
+                )
         
         # Parse verification status
         germline_confirmed = diagnosis_od.get("germlineDiagnosisConfirmed", False)
@@ -167,6 +192,7 @@ class KDKParser:
         
         return Diagnosis(
             icd10=icd10,
+            orphanet=orphanet,
             alphaIdSE=alpha_id_se,
             verificationStatus=verification_status,
             familyControlLevel=family_control,

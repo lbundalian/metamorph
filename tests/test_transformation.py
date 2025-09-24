@@ -12,7 +12,8 @@ from pathlib import Path
 # Add src to path so we can import our modules
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from metamorph.morphers.kdk_to_rd_morpher import KDKToRDMorpher
+from metamorph.morphers.kdk_morpher import KDKMorpher
+from metamorph.models.kdk import KDK
 from metamorph.utils.validate_api import validate_with_api
 
 def load_test_data(filename: str) -> dict:
@@ -36,16 +37,17 @@ def test_transformation():
     print("Starting KDK to RD transformation test with API validation...")
     
     # Initialize morpher
-    morpher = KDKToRDMorpher()
+    morpher = KDKMorpher()
     
     # Test with KDK.json
     try:
         print("\n1. Loading KDK.json...")
-        kdk_data = load_test_data("KDK.json")
-        print(f"   Loaded KDK data with keys: {list(kdk_data.keys())}")
+        kdk_data_path = Path(__file__).parent.parent / "sample" / "dummy" / "KDK.json"
+        kdk_obj = KDK(str(kdk_data_path))
+        print(f"   Loaded KDK object: {kdk_obj}")
         
         print("\n2. Performing transformation...")
-        rd_result = morpher.morph(kdk_data)
+        rd_result = morpher.morph(kdk_obj, 'RD')
         print(f"   Transformation completed. Result keys: {list(rd_result.keys())}")
         
         print("\n3. Validating result locally...")
@@ -122,15 +124,16 @@ def test_transformation():
 def test_with_multiple_files():
     """Test transformation with multiple dummy files including API validation."""
     test_files = ["KDK.json"]
-    morpher = KDKToRDMorpher()
+    morpher = KDKMorpher()
     
     results = {}
     for filename in test_files:
         try:
             print(f"\n=== Testing {filename} with API Validation ===")
-            data = load_test_data(filename)
-            result = morpher.morph(data)
-            is_valid = morpher.validate(result)
+            kdk_data_path = Path(__file__).parent.parent / "sample" / "dummy" / filename
+            kdk_obj = KDK(str(kdk_data_path))
+            result = morpher.morph(kdk_obj, 'RD')
+            is_valid, message = morpher.validate(result)
             
             # Save and validate with API
             output_file = save_result(result, f"from_{filename}")
