@@ -39,6 +39,20 @@
             "args": ["sample/confidential/2508261858_Case_250825_E2E2_KDK.json", "output/debug_confidential_output.json", "--validate"],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Python Debugger: MetaMorph FastApi",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/app/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "justMyCode": false
         }
+
+
     ]
 }

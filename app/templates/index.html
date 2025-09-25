@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metamorph - KDK to RD Converter API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 600px;
+            width: 90%;
+            margin: 2rem;
+        }
+        
+        .logo {
+            width: 200px;
+            height: auto;
+            margin-bottom: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        /* .logo:hover {
+            transform: scale(1.05);
+        } */
+        
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .description {
+            color: #555;
+            font-size: 1rem;
+            margin-bottom: 2.5rem;
+            line-height: 1.8;
+        }
+        
+        .api-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+        }
+        
+        /* .btn-primary:hover {
+            background: linear-gradient(45deg, #2980b9, #3498db);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+        } */
+        
+        .btn-secondary {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+        }
+        
+        /* .btn-secondary:hover {
+            background: linear-gradient(45deg, #c0392b, #e74c3c);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
+        } */
+        
+        .features {
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .features h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            color: #555;
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        
+        .feature-list li:before {
+            content: "✨";
+            position: absolute;
+            left: 0;
+        }
+        
+        .version {
+            color: #95a5a6;
+            font-size: 0.9rem;
+            margin-top: 2rem;
+            font-style: italic;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 2rem;
+                margin: 1rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .logo {
+                width: 150px;
+            }
+            
+            .api-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="/static/metamorph.png" alt="Metamorph Logo" class="logo">
+        
+        <h1>Metamorph</h1>
+        <p class="subtitle">KDK to RD Converter API</p>
+        
+        <p class="description">
+            Professional medical data transformation service for converting KDK (BfArM) format 
+            to RD (SE-dip) format with validation capabilities.
+        </p>
+        
+        <div class="api-buttons">
+            <a href="/docs" class="btn btn-primary">
+                <!-- 📚 Swagger UI -->
+                Swagger UI
+            </a>
+            <a href="/redoc" class="btn btn-secondary">
+                <!-- 📖 ReDoc -->
+                ReDoc
+            </a>
+        </div>
+        
+        <!-- <div class="features">
+            <h3>🚀 API Features</h3>
+            <ul class="feature-list">
+                <li>Convert KDK JSON to RD format</li>
+                <li>Validate KDK JSON input structure</li>
+                <li>Validate RD output against DNPM-DIP API</li>
+                <li>Combined conversion and validation</li>
+                <li>Support for both JSON input and file uploads</li>
+                <li>Missing diagnosis code detection</li>
+                <li>Clean architecture with comprehensive error handling</li>
+            </ul>
+        </div> -->
+        
+        <p class="version">
+            Version 1.0.0 | MetaMorph API (powered by FastAPI)
+        </p>
+    </div>
+</body>
+</html>
