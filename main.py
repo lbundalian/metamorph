@@ -70,15 +70,15 @@ def main():
         print(f"Output file: {output_file}")
         print(f"Target schema: RD")
         print(f"Architecture compliance: ✓ PASSED")
-        print(f"   - models/: Schema classes + parsers/ ✓")
-        print(f"   - morphers/: KDKMorpher conversion ✓")
-        print(f"   - utils/: Validation methods ✓")
+        # print(f"   - models/: Schema classes + parsers/ ✓")
+        # print(f"   - morphers/: KDKMorpher conversion ✓")
+        # print(f"   - utils/: Validation methods ✓")
         print(f"API validation: {'✅ VALID' if is_valid else '❌ INVALID'}")
         print(f"Your exact API: KDK(json) -> KDKMorpher(kdk_obj, 'RD') ✓")
         
         # show architecture details
-        print(f"\n📊 Supported target schemas: {morpher.get_supported_schemas()}")
-        print(f"🏗️  Clean architecture pattern: {morpher}")
+        # print(f"\n📊 Supported target schemas: {morpher.get_supported_schemas()}")
+        # print(f"🏗️  Clean architecture pattern: {morpher}")
         
     except ImportError as e:
         print(f"❌ Import Error: {e}")
