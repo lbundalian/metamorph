@@ -18,7 +18,7 @@ def main():
     # demo clean architecture
     
     # input and output paths  
-    input_file = "sample/confidential/GRZ_Sample_Pretty.json"
+    input_file = "sample/confidential/GRZ_Sample.json"
     output_file = "output/GRZ_sample_converted.json"
     
     print("🚀 Metamorph - Clean Architecture Implementation")
