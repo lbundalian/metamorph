@@ -40,7 +40,7 @@ def main():
         print(f"🔄 Step 2: Creating KDKMorpher and transforming to 'RD' schema")
         print("   Using morphers/kdk_morpher.KDKMorpher")
         morpher = KDKMorpher()
-        rd_object = morpher.morph(kdk, 'RD')  # your exact API
+        rd_object = morpher.morph(kdk, 'RD')  
         print("   ✓ KDK object transformed to RD schema")
         
         # step 3: save the result

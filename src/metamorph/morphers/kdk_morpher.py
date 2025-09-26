@@ -185,13 +185,16 @@ class KDKMorpher:
             )
             rd_hpo_terms.append(rd_hpo)
         
-        # Build final result
+        
+
+
+        ## formatted 
         rd_data = {
             "patient": to_dict(rd_patient),
             "diagnoses": [to_dict(diag) for diag in rd_diagnoses],
             "hpoTerms": [to_dict(hpo) for hpo in rd_hpo_terms],
-            "carePlans": [],  # required by API
-            "episodesOfCare": []  # required by API
+            "carePlans": [], 
+            "episodesOfCare": []  
         }
         
         return rd_data
