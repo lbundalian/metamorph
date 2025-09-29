@@ -1,6 +1,7 @@
 # KDK JSON parser - creates KDK model objects from raw JSON
 from datetime import datetime
 from typing import Dict, Any, List, Optional
+import uuid
 from ..kdk_model import (
     KDKSchema, Patient, Gender, VitalStatus, Age, Diagnosis, ICD10GM, 
     AlphaIdSE, Orphanet, VerificationStatus, FamilyControlLevel,
@@ -78,7 +79,9 @@ class KDKParser:
         vital_status = VitalStatus(code="alive", display="Lebend")
         
         # Extract patient ID from reference if available
-        patient_id = "example-patient-001"  # Default
+        # patient_id = "example-patient-001"  # Default
+        
+        patient_id = str(uuid.uuid4())
         research_consents = meta_data.get("researchConsents", [])
         if research_consents:
             patient_ref = research_consents[0].get("scope", {}).get("scope", {}).get("patient", {})
@@ -96,23 +99,22 @@ class KDKParser:
     def _parse_diagnoses(self, case_data: Dict[str, Any]) -> List[Diagnosis]:
         """Parse diagnosis information from case data."""
         diagnoses = []
-        diagnosis_od = case_data.get("diagnosisOd", {})
+        diagnosis_rd = case_data.get("diagnosisRd", {})
         
         # Parse main diagnosis
-        main_diag = diagnosis_od.get("mainDiagnosis", {})
+        main_diag = diagnosis_rd.get("mainDiagnosis", {}) or diagnosis_rd.get("diagnoses", {})
         if main_diag.get("code"):
-            diagnosis = self._create_diagnosis_from_dict(main_diag, diagnosis_od)
+            diagnosis = self._create_diagnosis_from_dict(main_diag, diagnosis_rd)
             
             # Add additional diagnoses to the same diagnosis object
-            additional_diagnoses = diagnosis_od.get("additionalDiagnoses", [])
-            # For now, we'll create one diagnosis entry with the main diagnosis
-            # Additional diagnoses would be handled separately in a full implementation
+            additional_diagnoses = diagnosis_rd.get("additionalDiagnoses", [])
+           
             
             diagnoses.append(diagnosis)
         
         return diagnoses
     
-    def _create_diagnosis_from_dict(self, diag_dict: Dict[str, Any], diagnosis_od: Dict[str, Any]) -> Diagnosis:
+    def _create_diagnosis_from_dict(self, diag_dict: Dict[str, Any], diagnosis_rd: Dict[str, Any]) -> Diagnosis:
         """Create a diagnosis object from dictionary data."""
         # Parse ICD-10-GM code from main diagnosis
         icd10 = None
@@ -125,7 +127,7 @@ class KDKParser:
         
         # Parse Orphanet code from additional diagnoses
         orphanet = None
-        additional_diagnoses = diagnosis_od.get("additionalDiagnoses", [])
+        additional_diagnoses = diagnosis_rd.get("additionalDiagnoses", [])
         for add_diag in additional_diagnoses:
             if add_diag.get("system") == "http://www.orpha.net" or add_diag.get("system") == "https://www.orpha.net":
                 orphanet = Orphanet(
@@ -150,8 +152,8 @@ class KDKParser:
         
         # If not found in additional diagnoses, check topography and histology
         if not alpha_id_se:
-            topography = diagnosis_od.get("topography", {})
-            histology = diagnosis_od.get("histology", {})
+            topography = diagnosis_rd.get("topography", {})
+            histology = diagnosis_rd.get("histology", {})
             
             if topography.get("system") == "https://www.bfarm.de/DE/Kodiersysteme/Terminologien/Alpha-ID-SE":
                 alpha_id_se = AlphaIdSE(
@@ -167,7 +169,7 @@ class KDKParser:
                 )
         
         # Parse verification status
-        germline_confirmed = diagnosis_od.get("germlineDiagnosisConfirmed", False)
+        germline_confirmed = diagnosis_rd.get("germlineDiagnosisConfirmed", False)
         verification_status = VerificationStatus(
             code="confirmed" if germline_confirmed else "provisional",
             display="Bestätigt" if germline_confirmed else "Verdachtsdiagnose"
@@ -201,9 +203,9 @@ class KDKParser:
     def _parse_hpo_terms(self, case_data: Dict[str, Any]) -> List[HPOTerm]:
         """Parse HPO terms from case data."""
         hpo_terms = []
-        diagnosis_od = case_data.get("diagnosisOd", {})
+        diagnosis_rd = case_data.get("diagnosisRd", {})
         
-        for hpo_dict in diagnosis_od.get("hpoTerms", []):
+        for hpo_dict in diagnosis_rd.get("phenotypes", []):
             if hpo_dict.get("code"):
                 hpo = HPO(
                     code=hpo_dict.get("code", ""),
@@ -223,9 +225,9 @@ class KDKParser:
     def _parse_care_plans(self, plan_data: Dict[str, Any], meta_data: Dict[str, Any]) -> List[CarePlan]:
         """Parse care plans from plan data."""
         care_plans = []
-        care_plan_od = plan_data.get("carePlanOd", {})
+        care_plan_rd = plan_data.get("carePlanRd", {})
         
-        if care_plan_od:
+        if care_plan_rd:
             # Parse therapy recommendations from preventive measures
             therapy_recommendations = []
             preventive_measures = plan_data.get("preventiveMeasures", [])
@@ -241,17 +243,17 @@ class KDKParser:
             
             # Parse genetic counseling recommendation
             genetic_counseling = None
-            if care_plan_od.get("counsellingRecommended"):
+            if care_plan_rd.get("counsellingRecommended"):
                 genetic_counseling = GeneticCounselingRecommendation(
                     reason="Genetic disorder diagnosis",
-                    issuedOn=care_plan_od.get("molecularBoardDecisionDate", datetime.now().strftime("%Y-%m-%d"))
+                    issuedOn=care_plan_rd.get("molecularBoardDecisionDate", datetime.now().strftime("%Y-%m-%d"))
                 )
             
             care_plan = CarePlan(
-                issuedOn=care_plan_od.get("molecularBoardDecisionDate", datetime.now().strftime("%Y-%m-%d")),
+                issuedOn=care_plan_rd.get("molecularBoardDecisionDate", datetime.now().strftime("%Y-%m-%d")),
                 therapyRecommendations=therapy_recommendations,
                 geneticCounselingRecommendation=genetic_counseling,
-                reevaluationRecommended=care_plan_od.get("reEvaluationRecommended", False)
+                reevaluationRecommended=care_plan_rd.get("reEvaluationRecommended", False)
             )
             care_plans.append(care_plan)
         
@@ -274,10 +276,10 @@ class KDKParser:
     def _parse_ngs_reports(self, case_data: Dict[str, Any], meta_data: Dict[str, Any]) -> List[NGSReport]:
         """Parse NGS reports from case data."""
         ngs_reports = []
-        diagnosis_od = case_data.get("diagnosisOd", {})
+        diagnosis_rd = case_data.get("diagnosisRd", {})
         
         # Parse sequencing information
-        library_type = diagnosis_od.get("libraryType", "WES")
+        library_type = diagnosis_rd.get("libraryType", "WES")
         sequencing = Sequencing(
             type=library_type,
             platform="Unknown",  # Not provided in sample data
@@ -302,6 +304,7 @@ class KDKParser:
     def parse_from_file(self, file_path: str) -> KDKSchema:
         """Parse KDK JSON file into KDK schema object."""
         import json
+
         
         with open(file_path, 'r', encoding='utf-8') as f:
             raw_json = json.load(f)

@@ -105,6 +105,8 @@ class Diagnosis(BaseModel):
     onsetDate: Optional[str] = None  # YYYY-MM format
     recordedOn: Optional[str] = None  # YYYY-MM-DD format
 
+
+
 # HPO terms
 @dataclass
 class HPOTerm(BaseModel):
