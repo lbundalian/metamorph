@@ -18,7 +18,7 @@ def main():
     # demo clean architecture
     
     # input and output paths  
-    input_file = "sample/confidential/KD_RD.json"
+    input_file = "sample/confidential/KDK_RD.json"
     output_file = "output/KD_RD_Converted.json"
     
     print("🚀 Metamorph - Clean Architecture Implementation")

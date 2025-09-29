@@ -100,73 +100,52 @@ class KDKParser:
         """Parse diagnosis information from case data."""
         diagnoses = []
         diagnosis_rd = case_data.get("diagnosisRd", {})
-        
+        diagnosis_list = []
+            
+
+
         # Parse main diagnosis
         main_diag = diagnosis_rd.get("mainDiagnosis", {}) or diagnosis_rd.get("diagnoses", {})
-        if main_diag.get("code"):
-            diagnosis = self._create_diagnosis_from_dict(main_diag, diagnosis_rd)
-            
-            # Add additional diagnoses to the same diagnosis object
-            additional_diagnoses = diagnosis_rd.get("additionalDiagnoses", [])
-           
-            
-            diagnoses.append(diagnosis)
         
-        return diagnoses
-    
-    def _create_diagnosis_from_dict(self, diag_dict: Dict[str, Any], diagnosis_rd: Dict[str, Any]) -> Diagnosis:
-        """Create a diagnosis object from dictionary data."""
-        # Parse ICD-10-GM code from main diagnosis
-        icd10 = None
-        if diag_dict.get("system") == "http://fhir.de/CodeSystem/bfarm/icd-10-gm":
-            icd10 = ICD10GM(
+        if type(main_diag) is list and main_diag:
+            for diag in main_diag:
+                diagnosis = self._map_dict_to_rd_diagnosis(diag, diagnosis_rd)
+                diagnosis_list.append(diagnosis)
+            
+            diagnosis = self._create_diagnosis_from_dict(diagnosis_list, diagnosis_rd)
+
+
+
+        return diagnosis
+
+    def _map_dict_to_rd_diagnosis(self, diag_dict: Dict[str, Any], diagnosis_rd: Dict[str, Any]) -> Diagnosis:
+        """Map a dictionary representation of a diagnosis to a Diagnosis object."""
+        mapped_diag = None
+
+        if "ICD-10" in diag_dict.get("system", "").upper():
+            mapped_diag = ICD10GM(
                 code=diag_dict.get("code", ""),
                 version=diag_dict.get("version", ""),
                 display=diag_dict.get("display", "")
             )
-        
-        # Parse Orphanet code from additional diagnoses
-        orphanet = None
-        additional_diagnoses = diagnosis_rd.get("additionalDiagnoses", [])
-        for add_diag in additional_diagnoses:
-            if add_diag.get("system") == "http://www.orpha.net" or add_diag.get("system") == "https://www.orpha.net":
-                orphanet = Orphanet(
-                    code=add_diag.get("code", ""),
-                    version=add_diag.get("version", ""),
-                    display=add_diag.get("display", "")
-                )
-                break
-        
-        # Parse Alpha-ID-SE code from additional diagnoses, topography, or histology
-        alpha_id_se = None
-        
-        # First check additional diagnoses
-        for add_diag in additional_diagnoses:
-            if add_diag.get("system") == "https://www.bfarm.de/DE/Kodiersysteme/Terminologien/Alpha-ID-SE":
-                alpha_id_se = AlphaIdSE(
-                    code=add_diag.get("code", ""),
-                    version=add_diag.get("version", ""),
-                    display=add_diag.get("display", "")
-                )
-                break
-        
-        # If not found in additional diagnoses, check topography and histology
-        if not alpha_id_se:
-            topography = diagnosis_rd.get("topography", {})
-            histology = diagnosis_rd.get("histology", {})
-            
-            if topography.get("system") == "https://www.bfarm.de/DE/Kodiersysteme/Terminologien/Alpha-ID-SE":
-                alpha_id_se = AlphaIdSE(
-                    code=topography.get("code", ""),
-                    version=topography.get("version", ""),
-                    display=topography.get("text", "")
-                )
-            elif histology.get("system") == "https://www.bfarm.de/DE/Kodiersysteme/Terminologien/Alpha-ID-SE":
-                alpha_id_se = AlphaIdSE(
-                    code=histology.get("code", ""),
-                    version=histology.get("version", ""),
-                    display=histology.get("text", "")
-                )
+        elif "ORPHA" in diag_dict.get("system", "").upper():
+            mapped_diag = Orphanet(
+                code=diag_dict.get("code", ""),
+                version=diag_dict.get("version", ""),
+                display=diag_dict.get("display", "")
+            )
+        elif "ALPHA" in diag_dict.get("system", "").upper():
+            mapped_diag = AlphaIdSE(
+                code=diag_dict.get("code", ""),
+                version=diag_dict.get("version", ""),
+                display=diag_dict.get("display", "")
+            )
+
+        return mapped_diag
+
+    
+    def _create_diagnosis_from_dict(self, diag_list: List[Dict[str, Any]], diagnosis_rd: Dict[str, Any]) -> Diagnosis:
+        """Create a diagnosis object from dictionary data."""
         
         # Parse verification status
         germline_confirmed = diagnosis_rd.get("germlineDiagnosisConfirmed", False)
@@ -177,27 +156,21 @@ class KDKParser:
         
         # Parse family control level (default to duo-genome)
         family_control = FamilyControlLevel(
-            code="duo-genome",
-            display="Duogenom"
+            code="",
+            display=""
         )
-        
-        # Parse dates
-        onset_date = None
-        if diag_dict.get("date"):
-            try:
-                date_obj = datetime.strptime(diag_dict["date"], "%Y-%m-%d")
-                onset_date = date_obj.strftime("%Y-%m")
-            except ValueError:
-                pass
+        family_control = FamilyControlLevel(
+            code=diagnosis_rd.get("diagnosticExtent", "singleGenome"),
+            display="Singelgenom"
+        )
+
         
         return Diagnosis(
-            icd10=icd10,
-            orphanet=orphanet,
-            alphaIdSE=alpha_id_se,
+            codings=diag_list,
             verificationStatus=verification_status,
             familyControlLevel=family_control,
-            onsetDate=onset_date,
-            recordedOn=diag_dict.get("date", "")
+            onsetDate=diagnosis_rd.get("symptomOnsetDate", ""),
+            recordedOn=diagnosis_rd.get("symptomOnsetDate", "")
         )
     
     def _parse_hpo_terms(self, case_data: Dict[str, Any]) -> List[HPOTerm]:

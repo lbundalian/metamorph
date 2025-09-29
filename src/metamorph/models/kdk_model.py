@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 from .base_model import BaseModel
+from typing import Union
 
 # core value objects based on BfArM RD spec
 @dataclass
@@ -91,14 +92,23 @@ class FamilyControlLevel(BaseModel):
     code: str = ""  # single-genome, duo-genome, trio-genome
     display: Optional[str] = None
 
+# @dataclass
+# class Diagnosis(BaseModel):
+#     # diagnosis info with multiple coding systems
+#     icd10: Optional[ICD10GM] = None
+#     icdO3M: Optional[ICD0M] = None
+#     icdO3T: Optional[ICDT] = None
+#     orphanet: Optional[Orphanet] = None
+#     alphaIdSE: Optional[AlphaIdSE] = None
+#     category: Optional[DiagnosisCategory] = None
+#     verificationStatus: Optional[VerificationStatus] = None
+#     familyControlLevel: Optional[FamilyControlLevel] = None
+#     onsetDate: Optional[str] = None  # YYYY-MM format
+#     recordedOn: Optional[str] = None  # YYYY-MM-DD format
+
 @dataclass
 class Diagnosis(BaseModel):
-    # diagnosis info with multiple coding systems
-    icd10: Optional[ICD10GM] = None
-    icdO3M: Optional[ICD0M] = None
-    icdO3T: Optional[ICDT] = None
-    orphanet: Optional[Orphanet] = None
-    alphaIdSE: Optional[AlphaIdSE] = None
+    codings: List[Union[ICD10GM, ICD0M, ICDT, Orphanet, AlphaIdSE]] = field(default_factory=list)
     category: Optional[DiagnosisCategory] = None
     verificationStatus: Optional[VerificationStatus] = None
     familyControlLevel: Optional[FamilyControlLevel] = None
