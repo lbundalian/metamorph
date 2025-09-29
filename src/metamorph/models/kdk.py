@@ -44,17 +44,17 @@ class KDK:
         # get patient ID from parsed schema
         return self.schema.patient.id if self.schema and self.schema.patient else ""
     
-    def get_diagnoses_count(self) -> int:
-        # get number of diagnoses
-        return len(self.schema.diagnoses) if self.schema else 0
+    # def get_diagnoses_count(self) -> int:
+    #     # get number of diagnoses
+    #     return len(self.schema.diagnoses) if self.schema else 0
     
-    def get_hpo_terms_count(self) -> int:
-        # get number of HPO terms
-        return len(self.schema.hpoTerms) if self.schema else 0
+    # def get_hpo_terms_count(self) -> int:
+    #     # get number of HPO terms
+    #     return len(self.schema.hpoTerms) if self.schema else 0
     
-    def get_care_plans_count(self) -> int:
-        # get number of care plans
-        return len(self.schema.carePlans) if self.schema else 0
+    # def get_care_plans_count(self) -> int:
+    #     # get number of care plans
+    #     return len(self.schema.carePlans) if self.schema else 0
     
     def to_dict(self) -> Dict[str, Any]:
         # convert parsed schema back to dict
@@ -65,10 +65,12 @@ class KDK:
         if not self.schema:
             return "KDK(empty)"
         
-        return (f"KDK(patient_id={self.get_patient_id()}, "
-                f"diagnoses={self.get_diagnoses_count()}, "
-                f"hpo_terms={self.get_hpo_terms_count()}, "
-                f"care_plans={self.get_care_plans_count()})")
+        return (f"KDK(patient_id={self.get_patient_id()}")
+
+        # return (f"KDK(patient_id={self.get_patient_id()}, "
+        #         f"diagnoses={self.get_diagnoses_count()}, "
+        #         f"hpo_terms={self.get_hpo_terms_count()}, "
+        #         f"care_plans={self.get_care_plans_count()})")
     
     def __repr__(self) -> str:
         # detailed representation of KDK object

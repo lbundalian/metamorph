@@ -159,9 +159,27 @@ class KDKParser:
             code="",
             display=""
         )
+
+        diagnostic_extent = diagnosis_rd.get("diagnosticExtent", "single-genome")
+
+        fc_matching = { 
+            "singleGenome": "single-genome",
+            "duoGenome": "duo-genome",
+            "trioGenome": "trio-genome"
+        }
+
+        fc_level = fc_matching.get(diagnostic_extent, "no-record")
+
+        family_control_mapping = {
+            "single-genome": "Single-Genome",
+            "duo-genome": "Duo-Genome", 
+            "trio-genome": "Trio-Genome",
+            "no-record": "Keine Angabe"
+        }
+        
         family_control = FamilyControlLevel(
-            code=diagnosis_rd.get("diagnosticExtent", "singleGenome"),
-            display="Singelgenom"
+            code=fc_level,
+            display=family_control_mapping.get(fc_level, "no-record")
         )
 
         
@@ -170,7 +188,7 @@ class KDKParser:
             verificationStatus=verification_status,
             familyControlLevel=family_control,
             onsetDate=diagnosis_rd.get("symptomOnsetDate", ""),
-            recordedOn=diagnosis_rd.get("symptomOnsetDate", "")
+            recordedOn=datetime.now().strftime("%Y-%m-%d")
         )
     
     def _parse_hpo_terms(self, case_data: Dict[str, Any]) -> List[HPOTerm]:
@@ -178,19 +196,19 @@ class KDKParser:
         hpo_terms = []
         diagnosis_rd = case_data.get("diagnosisRd", {})
         
-        for hpo_dict in diagnosis_rd.get("phenotypes", []):
-            if hpo_dict.get("code"):
+        hpo_list = diagnosis_rd.get("phenotypes", [])
+        if type(hpo_list) is list and hpo_list:
+            for hpo_dict in hpo_list:
                 hpo = HPO(
                     code=hpo_dict.get("code", ""),
                     version=hpo_dict.get("version", ""),
                     display=hpo_dict.get("text", "")
                 )
-                
                 hpo_term = HPOTerm(
                     value=hpo,
                     recordedOn=datetime.now().strftime("%Y-%m-%d"),
                     onsetDate=datetime.now().strftime("%Y-%m")
-                )
+                )    
                 hpo_terms.append(hpo_term)
         
         return hpo_terms
@@ -261,6 +279,7 @@ class KDKParser:
         
         # For now, create empty variants list since no variant data in sample
         variants = []
+        # variants = meta_data.get("molecular", []).get("variants", [])
         
         # Get issue date from submission
         issued_on = meta_data.get("submission", {}).get("date", datetime.now().strftime("%Y-%m-%d"))

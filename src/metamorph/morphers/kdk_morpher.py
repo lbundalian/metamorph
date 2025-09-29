@@ -6,6 +6,17 @@ import json
 import tempfile
 import os
 
+
+from ..models.kdk_model import (
+    KDKSchema, Patient, Gender, VitalStatus, Age, Diagnosis, ICD10GM, 
+    AlphaIdSE, Orphanet, VerificationStatus, FamilyControlLevel,
+    HPOTerm, HPO, CarePlan, TherapyRecommendation, TherapyCategory, 
+    TherapyType, StudyEnrollmentRecommendation, GeneticCounselingRecommendation,
+    EpisodeOfCare, NGSReport, Sequencing, Variant, VariantType, 
+    Significance, Zygosity, DiagnosisCategory
+)
+
+
 class KDKMorpher:
     # transforms KDK objects to different schemas
     
@@ -95,79 +106,102 @@ class KDKMorpher:
         
         # Create diagnoses
         rd_diagnoses = []
-        for kdk_diagnosis in kdk_schema.diagnoses:
+        kdk_diagnosis = kdk_schema.diagnoses
+        codes = []
+            
+        has_icd10 = any(c for c in kdk_diagnosis.codings if isinstance(c, ICD10GM))
+        has_orphanet = any(c for c in kdk_diagnosis.codings if isinstance(c, Orphanet))
+        has_alphaIdSE = any(c for c in kdk_diagnosis.codings if isinstance(c, AlphaIdSE))
+
+        for k in kdk_diagnosis.codings:
             codes = []
-            
-            # Check what codes we have
-            has_icd10 = bool(kdk_diagnosis.icd10)
-            has_orphanet = bool(kdk_diagnosis.orphanet)
-            has_alphaIdSE = bool(kdk_diagnosis.alphaIdSE)
-            
-            # Add ICD-10 code if exists
-            if kdk_diagnosis.icd10:
+            if isinstance(k, ICD10GM):
                 codes.append(Code(
-                    code=kdk_diagnosis.icd10.code,
-                    display=kdk_diagnosis.icd10.display or "",
-                    version=kdk_diagnosis.icd10.version,
+                    code=k.code,
+                    display=k.display or "",
+                    version=k.version,
                     system="http://fhir.de/CodeSystem/bfarm/icd-10-gm"
                 ))
-            
-            # Add Orphanet code if exists
-            if kdk_diagnosis.orphanet:
+            elif isinstance(k, Orphanet):
                 codes.append(Code(
-                    code=kdk_diagnosis.orphanet.code,
-                    display=kdk_diagnosis.orphanet.display or "",
-                    version=kdk_diagnosis.orphanet.version,
-                    system="http://www.orpha.net"
+                    code=k.code,
+                    display=k.display or "",
+                    version=k.version,
+                    system="https://www.orpha.net"
                 ))
-            
-            # Add Alpha-ID-SE code if exists
-            if kdk_diagnosis.alphaIdSE:
+            elif isinstance(k, AlphaIdSE):
                 codes.append(Code(
-                    code=kdk_diagnosis.alphaIdSE.code,
-                    display=kdk_diagnosis.alphaIdSE.display or "",
-                    version=kdk_diagnosis.alphaIdSE.version,
-                    system="http://fhir.de/CodeSystem/alpha-id-se"
+                    code=k.code,
+                    display=k.display or "",
+                    version=k.version,
+                    system="https://www.bfarm.de/DE/Kodiersysteme/Terminologien/Alpha-ID-SE"
                 ))
-            
-            # Create the diagnosis object
-            rd_diagnosis = Diagnosis(
-                id=str(uuid.uuid4()),
-                patient=Reference(id=kdk_schema.patient.id, type="Patient"),
-                recordedOn=kdk_diagnosis.recordedOn or datetime.now().strftime("%Y-%m-%d"),
-                codes=codes,
-                verificationStatus=Code(
-                    code=kdk_diagnosis.verificationStatus.code if kdk_diagnosis.verificationStatus else "confirmed",
-                    system="http://terminology.hl7.org/CodeSystem/condition-ver-status"
-                ),
-                familyControlLevel=Code(
-                    code=kdk_diagnosis.familyControlLevel.code if kdk_diagnosis.familyControlLevel else "single-genome",
-                    system="dnpm-dip/rd/diagnosis/family-control-level"
-                ),
-                onsetDate=kdk_diagnosis.onsetDate
-            )
-            
-            # Check if any codes are missing
-            missing_codes = []
-            if not has_icd10:
-                missing_codes.append("ICD-10-GM")
-            if not has_orphanet:
-                missing_codes.append("ORDO")
-            if not has_alphaIdSE:
-                missing_codes.append("Alpha-ID-SE")
-            
-            # Add missing code reason if needed
-            if missing_codes:
-                # Convert to dict and add missing code reason
-                diagnosis_dict = to_dict(rd_diagnosis)
-                diagnosis_dict["missingCodeReason"] = {
-                    "code": "no-matching-code",
-                    "display": "Kein geeigneter Code (ICD-10-GM, ORDO, Alpha-ID-SE) verfügbar"
-                }
-                rd_diagnoses.append(diagnosis_dict)
-            else:
-                rd_diagnoses.append(rd_diagnosis)
         
+        # Add ICD-10 code if exists
+        # if kdk_diagnosis.icd10:
+        #     codes.append(Code(
+        #         code=kdk_diagnosis.icd10.code,
+        #         display=kdk_diagnosis.icd10.display or "",
+        #         version=kdk_diagnosis.icd10.version,
+        #         system="http://fhir.de/CodeSystem/bfarm/icd-10-gm"
+        #     ))
+        
+        # Add Orphanet code if exists
+        # if kdk_diagnosis.orphanet:
+        #     codes.append(Code(
+        #         code=kdk_diagnosis.orphanet.code,
+        #         display=kdk_diagnosis.orphanet.display or "",
+        #         version=kdk_diagnosis.orphanet.version,
+        #         system="http://www.orpha.net"
+        #     ))
+        
+        # # Add Alpha-ID-SE code if exists
+        # if kdk_diagnosis.alphaIdSE:
+        #     codes.append(Code(
+        #         code=kdk_diagnosis.alphaIdSE.code,
+        #         display=kdk_diagnosis.alphaIdSE.display or "",
+        #         version=kdk_diagnosis.alphaIdSE.version,
+        #         system="http://fhir.de/CodeSystem/alpha-id-se"
+        #     ))
+        
+        # Create the diagnosis object
+        rd_diagnosis = Diagnosis(
+            id=str(uuid.uuid4()),
+            patient=Reference(id=kdk_schema.patient.id, type="Patient"),
+            recordedOn=kdk_diagnosis.recordedOn or datetime.now().strftime("%Y-%m-%d"),
+            codes=codes,
+            verificationStatus=Code(
+                code=kdk_diagnosis.verificationStatus.code if kdk_diagnosis.verificationStatus else "confirmed",
+                system="http://terminology.hl7.org/CodeSystem/condition-ver-status"
+            ),
+            familyControlLevel=Code(
+                code=kdk_diagnosis.familyControlLevel.code if kdk_diagnosis.familyControlLevel else "single-genome",
+                system="dnpm-dip/rd/diagnosis/family-control-level"
+            ),
+            onsetDate=kdk_diagnosis.onsetDate
+        )
+        
+            # Check if any codes are missing
+        missing_codes = []
+        if not has_icd10:
+            missing_codes.append("ICD-10-GM")
+        if not has_orphanet:
+            missing_codes.append("ORDO")
+        if not has_alphaIdSE:
+            missing_codes.append("Alpha-ID-SE")
+        
+        # Add missing code reason if needed
+        if missing_codes:
+            # Convert to dict and add missing code reason
+            diagnosis_dict = to_dict(rd_diagnosis)
+            diagnosis_dict["missingCodeReason"] = {
+                "code": "no-matching-code",
+                "display": "Kein geeigneter Code (ICD-10-GM, ORDO, Alpha-ID-SE) verfügbar"
+            }
+            rd_diagnoses.append(diagnosis_dict)
+        else:
+            rd_diagnoses.append(rd_diagnosis)
+    
         # Create HPO terms
         rd_hpo_terms = []
         for kdk_hpo in kdk_schema.hpoTerms:
@@ -185,13 +219,72 @@ class KDKMorpher:
             )
             rd_hpo_terms.append(rd_hpo)
         
+        rd_care_plans = []  # No care plans in KDK, so empty list
+        for kdk_cp in kdk_schema.carePlans:
+            tr = kdk_cp.therapyRecommendations or []
+            ser = kdk_cp.studyEnrollmentRecommendations or []
+            gcr = kdk_cp.geneticCounselingRecommendation or []
+
+            rd_cp = CarePlan(
+                id=str(uuid.uuid4()),
+                patient=Reference(id=kdk_schema.patient.id, type="Patient"),
+                issuedOn=kdk_cp.issuedOn or datetime.now().strftime("%Y-%m-%d"),
+                therapyRecommendations=[
+                    TherapyRecommendation(
+                        category=Code(
+                            code=tr.category.code if tr.category else "unspecified",
+                            system="dnpm-dip/rd/therapy-recommendation/category"
+                        ),
+                        type=Code(
+                            code=tr.type.code if tr.type else "unspecified",
+                            system="dnpm-dip/rd/therapy-recommendation/type"
+                        ),
+                        recommendation=tr.recommendation or ""
+                    ) for tr in (kdk_cp.therapyRecommendations or [])
+                ],
+                studyEnrollmentRecommendations=[
+                    Code(
+                        code=ser.code,
+                        display=ser.display or "",
+                        system="dnpm-dip/rd/study-enrollment-recommendation"
+                    ) for ser in (kdk_cp.studyEnrollmentRecommendations or [])
+                ],
+                # geneticCounselingRecommendations=[
+                #     Code(
+                #         code=gcr.code,
+                #         display=gcr.display or "",
+                #         system="dnpm-dip/rd/genetic-counseling-recommendation"
+                #     ) for gcr in (kdk_cp.geneticCounselingRecommendations or [])
+                # ]
+                geneticCounselingRecommended = True if gcr else False,
+            )
+            rd_care_plans.append(rd_cp)
+
+        episodes_of_care = []  # No episodes of care in KDK, so empty list
+        ec_list = kdk_schema.episodesOfCare or []
+        for kdk_ec in ec_list:
+            ec_period = None
+            if kdk_ec.period:
+                ec_period = Period(
+                    start=kdk_ec.period.get("start", ""),
+                    end=kdk_ec.period.get("end", "")
+                )
+            rd_ec = EpisodeOfCare(
+                id=str(uuid.uuid4()),
+                patient=Reference(id=kdk_schema.patient.id, type="Patient"),
+                # status=kdk_ec.status or "active",
+                period=ec_period
+            )
+            episodes_of_care.append(rd_ec)
+
+
         # Build final result
         rd_data = {
             "patient": to_dict(rd_patient),
             "diagnoses": [to_dict(diag) for diag in rd_diagnoses],
             "hpoTerms": [to_dict(hpo) for hpo in rd_hpo_terms],
-            "carePlans": [],  # required by API
-            "episodesOfCare": []  # required by API
+            "carePlans": [to_dict(cp) for cp in rd_care_plans],
+            "episodesOfCare": [to_dict(ep) for ep in episodes_of_care]
         }
         
         return rd_data

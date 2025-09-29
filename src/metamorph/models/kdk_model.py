@@ -92,6 +92,7 @@ class FamilyControlLevel(BaseModel):
     code: str = ""  # single-genome, duo-genome, trio-genome
     display: Optional[str] = None
 
+
 # @dataclass
 # class Diagnosis(BaseModel):
 #     # diagnosis info with multiple coding systems
