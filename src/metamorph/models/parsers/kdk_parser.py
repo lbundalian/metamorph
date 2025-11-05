@@ -33,7 +33,7 @@ class KDKParser:
         care_plans = self._parse_care_plans(plan_data, meta_data)
         
         # parse episodes of care
-        episodes = self._parse_episodes_of_care(meta_data)
+        episodes = self._parse_episodes_of_care(case_data)
         
         # parse NGS reports
         ngs_reports = self._parse_ngs_reports(case_data, meta_data)
@@ -84,8 +84,11 @@ class KDKParser:
         patient_id = str(uuid.uuid4())
         research_consents = meta_data.get("researchConsents", [])
         if research_consents:
-            patient_ref = research_consents[0].get("scope", {}).get("scope", {}).get("patient", {})
-            if patient_ref.get("reference"):
+            try:
+                patient_ref = research_consents[0].get("scope", {}).get("scope", {}).get("patient", {})
+            except Exception:
+                patient_ref = None
+            if patient_ref and patient_ref.get("reference"):
                 patient_id = patient_ref["reference"].split("/")[-1]
         
         return Patient(
@@ -250,16 +253,18 @@ class KDKParser:
         
         return care_plans
     
-    def _parse_episodes_of_care(self, meta_data: Dict[str, Any]) -> List[EpisodeOfCare]:
+    def _parse_episodes_of_care(self, case_data: Dict[str, Any]) -> List[EpisodeOfCare]:
         """Parse episodes of care from metadata."""
         episodes = []
-        submission = meta_data.get("submission", {})
+        # submission = meta_data.get("submission", {})
+        submission = case_data.get("priorRds", {})
         
-        if submission.get("date"):
-            episode = EpisodeOfCare(
-                period={"start": submission["date"]},
-                status="active"
-            )
+        if submission:
+            for s in submission:
+                episode = EpisodeOfCare(
+                    period={"start": s["zseContactDate"]},
+                    status="active"
+                )
             episodes.append(episode)
         
         return episodes

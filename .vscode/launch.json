@@ -18,7 +18,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
-            "args": ["sample/confidential/Sample_RareDiseases.json", "output/debug_confidential_output.json"],
+            "args": ["sample/confidential/test.json", "output/debug_confidential_output.json"],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
         },
@@ -37,6 +37,15 @@
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
             "args": ["sample/confidential/KDK_RD.json", "output/KDK_RD_Converted.json", "--validate"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Python Debugger: Batch Processor - Confidential Files",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/process.py",
+            "args": ["sample/confidential/gepado/", "output/gepado/", "RD"],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
         },

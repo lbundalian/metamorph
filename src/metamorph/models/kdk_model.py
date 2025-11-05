@@ -230,6 +230,13 @@ class Patient(BaseModel):
     vitalStatus: VitalStatus = field(default_factory=VitalStatus)
     dateOfDeath: Optional[str] = None
 
+
+@dataclass
+class HealthInsurance(BaseModel):
+    # health insurance info
+    code: str = ""
+    reference: Optional[Dict[str, str]] = None
+
 # main schema
 @dataclass
 class KDKSchema(BaseModel):
@@ -239,6 +246,7 @@ class KDKSchema(BaseModel):
     hpoTerms: List[HPOTerm] = field(default_factory=list)
     carePlans: List[CarePlan] = field(default_factory=list)
     episodesOfCare: List[EpisodeOfCare] = field(default_factory=list)
+    
     ngsReports: List[NGSReport] = field(default_factory=list)
     
     # metadata

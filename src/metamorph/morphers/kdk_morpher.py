@@ -98,9 +98,9 @@ class KDKMorpher:
             ),
             dateOfDeath=kdk_schema.patient.dateOfDeath,
             address=Address(),  # default empty address
-            healthInsurance=HealthInsurance(
-                type=Code(code="GKV", display="gesetzliche Krankenversicherung", system="http://fhir.de/CodeSystem/versicherungsart-de-basis")
-            ),
+            # healthInsurance=HealthInsurance(
+            #     type=Code(code="GKV", display="gesetzliche Krankenversicherung", system="http://fhir.de/CodeSystem/versicherungsart-de-basis")
+            # ),
             site=Code(code="default-site")
         )
         
@@ -266,8 +266,8 @@ class KDKMorpher:
             ec_period = None
             if kdk_ec.period:
                 ec_period = Period(
-                    start=kdk_ec.period.get("start", ""),
-                    end=kdk_ec.period.get("end", "")
+                    start=kdk_ec.period.get("start", "")
+                    # end=kdk_ec.period.get("end", "")
                 )
             rd_ec = EpisodeOfCare(
                 id=str(uuid.uuid4()),

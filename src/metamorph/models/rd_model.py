@@ -23,7 +23,7 @@ class Reference(BaseModel):
 class Period(BaseModel):
     # time period with start and end
     start: Optional[str] = None
-    end: Optional[str] = None
+    # end: Optional[str] = None
 
 @dataclass
 class Age(BaseModel):
