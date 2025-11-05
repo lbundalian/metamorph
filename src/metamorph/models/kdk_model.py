@@ -7,7 +7,7 @@ from typing import Union
 @dataclass
 class Coding(BaseModel):
     # coded value with system, code, version, display
-    system: str = ""
+    system: Optional[str] = None
     code: str = ""
     version: Optional[str] = None
     display: Optional[str] = None
@@ -234,7 +234,7 @@ class Patient(BaseModel):
 @dataclass
 class HealthInsurance(BaseModel):
     # health insurance info
-    code: str = ""
+    type: Coding = field(default_factory=Coding)
     reference: Optional[Dict[str, str]] = None
 
 # main schema
@@ -246,7 +246,7 @@ class KDKSchema(BaseModel):
     hpoTerms: List[HPOTerm] = field(default_factory=list)
     carePlans: List[CarePlan] = field(default_factory=list)
     episodesOfCare: List[EpisodeOfCare] = field(default_factory=list)
-    
+    healthInsurance: HealthInsurance = field(default_factory=HealthInsurance)
     ngsReports: List[NGSReport] = field(default_factory=list)
     
     # metadata

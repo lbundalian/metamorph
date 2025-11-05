@@ -99,8 +99,12 @@ class KDKMorpher:
             dateOfDeath=kdk_schema.patient.dateOfDeath,
             address=Address(),  # default empty address
             # healthInsurance=HealthInsurance(
-            #     type=Code(code="GKV", display="gesetzliche Krankenversicherung", system="http://fhir.de/CodeSystem/versicherungsart-de-basis")
-            # ),
+            #     code=kdk_schema.healthInsurance.type.code,
+            #     display=kdk_schema.healthInsurance.type.display or ""),
+            healthInsurance=HealthInsurance(type=Code(
+                code=kdk_schema.healthInsurance.type.code,
+                display=kdk_schema.healthInsurance.type.display or ""
+            )),
             site=Code(code="default-site")
         )
         

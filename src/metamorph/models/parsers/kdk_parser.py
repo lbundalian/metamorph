@@ -3,12 +3,12 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 import uuid
 from ..kdk_model import (
-    KDKSchema, Patient, Gender, VitalStatus, Age, Diagnosis, ICD10GM, 
+    Coding, KDKSchema, Patient, Gender, VitalStatus, Age, Diagnosis, ICD10GM, 
     AlphaIdSE, Orphanet, VerificationStatus, FamilyControlLevel,
     HPOTerm, HPO, CarePlan, TherapyRecommendation, TherapyCategory, 
     TherapyType, StudyEnrollmentRecommendation, GeneticCounselingRecommendation,
     EpisodeOfCare, NGSReport, Sequencing, Variant, VariantType, 
-    Significance, Zygosity, DiagnosisCategory
+    Significance, Zygosity, DiagnosisCategory, HealthInsurance
 )
 
 class KDKParser:
@@ -35,6 +35,8 @@ class KDKParser:
         # parse episodes of care
         episodes = self._parse_episodes_of_care(case_data)
         
+        insurance = self._parse_insurance(meta_data)
+
         # parse NGS reports
         ngs_reports = self._parse_ngs_reports(case_data, meta_data)
         
@@ -46,6 +48,7 @@ class KDKParser:
             episodesOfCare=episodes,
             ngsReports=ngs_reports,
             recordedOn=datetime.now().strftime("%Y-%m-%d"),
+            healthInsurance=insurance,
             lastUpdate=datetime.now().strftime("%Y-%m-%d")
         )
     
@@ -120,6 +123,36 @@ class KDKParser:
 
 
         return diagnosis
+    
+    def _parse_insurance(self, metadata: Dict[str, Any]) -> HealthInsurance:
+        """Parse diagnosis information from case data."""
+        insurance = None
+
+        insurance_type= {
+                "AT": "Beihilfe",
+                "BG": "Berufsgenossenschaft",
+                "GKV": "Gesetzliche Krankenversicherung",
+                "GPV": "Gesetzliche Pflegeversicherung",
+                "PKV": "Private Krankenversicherung",
+                "PPV": "Private Pflegeversicherung",
+                "SALT": "Selbstzahler",
+                "SCO": "Sozialhilfeträger",
+                "ST": "Sonstige Kostenträger",
+                "UNK": "Unbekannt"
+        }
+        insurance_code = "UNK"
+
+        insurance_code = metadata.get("coverageType", {})
+        if insurance_code:
+            insurance = HealthInsurance(Coding(
+                code=insurance_code,
+                display=insurance_type.get(insurance_code, "Unbekannt"))
+            )            
+
+
+
+
+        return insurance
 
     def _map_dict_to_rd_diagnosis(self, diag_dict: Dict[str, Any], diagnosis_rd: Dict[str, Any]) -> Diagnosis:
         """Map a dictionary representation of a diagnosis to a Diagnosis object."""
@@ -163,7 +196,7 @@ class KDKParser:
             display=""
         )
 
-        diagnostic_extent = diagnosis_rd.get("diagnosticExtent", "single-genome")
+        diagnostic_extent = diagnosis_rd.get("diagnosticExtent", "no-record")
 
         fc_matching = { 
             "singleGenome": "single-genome",
