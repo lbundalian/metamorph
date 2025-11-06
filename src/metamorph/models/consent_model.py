@@ -30,7 +30,7 @@ class Provision:
 
 @dataclass
 class Consent:
-    date: date
+    date: str
     version: str
     
     # key: policy name/code, value: history of statuses (most recent last)
@@ -40,10 +40,9 @@ class Consent:
 
 @dataclass
 class Metadata:
-    type: Coding
-    # submissionType: Coding
+    type: str
     transferTAN: str
     healthInsuranceType: Coding
-    modelProjectConsent: Consent
-    # Assumed same structure; mark optional to reflect "???"
-    researchConsent: List[Dict[str, Any]] = field(default_factory=list)
+    modelProjectConsent: Optional[Consent] = None
+    researchConsents: List[Dict[str, Any]] = field(default_factory=list)
+    reasonResearchConsentMissing: str = None

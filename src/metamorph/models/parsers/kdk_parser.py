@@ -84,7 +84,6 @@ class KDKParser:
         )
     
     def _parse_metadata(self, metadata: Dict[str, Any]) -> Metadata:
-
         submission_type = metadata.get("submission", "").get("type", "")
         transfer_tan = metadata.get("tanC", "")
         insurance = self._parse_insurance(metadata)
@@ -97,14 +96,8 @@ class KDKParser:
             "caseIdentification": "case-identification"
         }
 
-        # {sequencing, case-identification, reidentification}
+        # Parse model project consent provisions
         for scope in project_consent_meta.get("scope", []):
-            # policy = Consent(
-            #     presentedOn=scope.get("date", ""),
-            #     consented=scope.get("type", ""),
-            #     lastUpdate=scope.get("date", ""),
-            #     version=project_consent_meta.get("version", "")
-            # )
             provision = Provision(
                 purpose=purpose_mapping.get(scope.get("domain", ""), "sequencing"),
                 date=scope.get("date", ""),
@@ -117,16 +110,69 @@ class KDKParser:
             version=project_consent_meta.get("version", ""),
             provisions=provisions
         )
-        research_consent = metadata.get("researchConsents", [])
+        
+        # Parse research consents with noScopeJustification handling
+        research_consents = metadata.get("researchConsents", [])
+        research_consent_missing = None
+        
+        # Check for noScopeJustification in research consents
+        for research_consent in research_consents:
+            no_scope_justification = research_consent.get("noScopeJustification")
+            if no_scope_justification:
+                # If noScopeJustification exists, empty the research_consents list
+                research_consents = []
+                
+                # Map the reason for missing research consent using your specific mapping
+                reason_mapping = {
+                    "patient-inability": "Einwilligung durch den Patienten nicht möglich",
+                    "patient-refusal": "Einwilligung vom Patienten abgelehnt",
+                    "consent-not-returned": "Einwilligung vom Patienten nicht abgegeben",
+                    "other-patient-reason": "Anderer Patienten-bedingter Grund",
+                    "technical-issues": "Consent aus technischen Gründen nicht verfügbar",
+                    "organizational-issues": "Consent aus organisatorischen Gründen nicht verfügbar"
+                }
+                
+                # Handle both string and object formats for noScopeJustification
+                if isinstance(no_scope_justification, str):
+                    # Parse string description to determine reason code
+                    justification_text = no_scope_justification.lower()
+                    
+                    # Map text patterns to reason codes
+                    if "patient" in justification_text and ("unable" in justification_text or "nicht möglich" in justification_text):
+                        reason_code = "patient-inability"
+                    elif "patient" in justification_text and ("refus" in justification_text or "abgelehnt" in justification_text):
+                        reason_code = "patient-refusal"
+                    elif "not returned" in justification_text or "nicht abgegeben" in justification_text:
+                        reason_code = "consent-not-returned"
+                    elif "technical" in justification_text or "technisch" in justification_text:
+                        reason_code = "technical-issues"
+                    elif "organizational" in justification_text or "organisatorisch" in justification_text:
+                        reason_code = "organizational-issues"
+                    else:
+                        reason_code = "other-patient-reason"
+                    
+                    reason_display = reason_mapping.get(reason_code, "Anderer Patienten-bedingter Grund")
+                    
+                elif isinstance(no_scope_justification, dict):
+                    # Handle structured object format
+                    reason_code = no_scope_justification.get("reason", "other-patient-reason")
+                    reason_display = reason_mapping.get(reason_code, "Anderer Patienten-bedingter Grund")
+                else:
+                    # Fallback for unexpected format
+                    reason_code = "other-patient-reason"
+                    reason_display = "Anderer Patienten-bedingter Grund"
+                
+                # Create Coding object for missing research consent reason
+                research_consent_missing = reason_code
+                break  # Exit loop after finding the first noScopeJustification
 
-
-        """Parse metadata information."""
         return Metadata(
             type=submission_type,
             transferTAN=transfer_tan,
             healthInsuranceType=insurance,
             modelProjectConsent=consent,
-            researchConsent=research_consent
+            researchConsents=research_consents,  # Empty list if noScopeJustification found
+            reasonResearchConsentMissing=research_consent_missing  # Mapped reason or None
         )
 
 
