@@ -351,11 +351,11 @@ class KDKMorpher:
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(transformed_object, f, indent=2, ensure_ascii=False)
             
-            print(f"✓ Transformed object saved to {output_path}")
+            print(f"Transformed object saved to {output_path}")
             return True
             
         except Exception as e:
-            print(f"❌ Error saving transformed object to {output_path}: {e}")
+            print(f"Error saving transformed object to {output_path}: {e}")
             return False
     
     def validate(self, transformed_object: Dict[str, Any], target_schema: str = 'RD') -> tuple[bool, str]:
@@ -395,17 +395,17 @@ class KDKMorpher:
             # special case for "Valid" response
             if (error == "Invalid JSON response" and 
                 validation_result.get("raw_response") == "Valid"):
-                return True, "✅ Schema validation passed"
+                return True, "Schema validation passed"
             
             # handle different error types
             if "timed out" in error.lower():
-                return False, "🕒 API request timed out - please try again"
+                return False, "API request timed out - please try again"
             elif "curl command failed" in error.lower():
-                return False, f"🌐 Network error (curl failed): {validation_result.get('stderr', 'Unknown error')}"
+                return False, f"Network error (curl failed): {validation_result.get('stderr', 'Unknown error')}"
             elif "file not found" in error.lower():
-                return False, "📁 File not found for validation"
+                return False, "File not found for validation"
             else:
-                return False, f"❌ API Error: {error}"
+                return False, f"API Error: {error}"
         
         # handle validation errors
         if "errors" in validation_result and validation_result["errors"]:
@@ -413,7 +413,7 @@ class KDKMorpher:
             error_count = len(errors)
             
             # create nice error summary
-            cli_message = f"🔍 Found {error_count} validation error{'s' if error_count > 1 else ''}:\n"
+            cli_message = f"Found {error_count} validation error{'s' if error_count > 1 else ''}:\n"
             
             for i, error in enumerate(errors[:5], 1):  # show max 5 errors
                 # clean up the error message
@@ -427,10 +427,10 @@ class KDKMorpher:
         
         # handle success
         if validation_result.get("validation_successful", True):
-            return True, "✅ Schema validation passed successfully"
+            return True, "Schema validation passed successfully"
         
         # default
-        return True, "✅ Validation completed"
+        return True, "Validation completed"
     
     def _format_error_message(self, error: str) -> str:
         """

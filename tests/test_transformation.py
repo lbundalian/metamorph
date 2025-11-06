@@ -59,15 +59,15 @@ def test_transformation():
         api_validation = validate_with_api(output_file)
         
         if api_validation.get("validation_successful"):
-            print("   ✅ API validation PASSED!")
+            print("   API validation PASSED!")
             if "api_response" in api_validation:
                 response = api_validation["api_response"]
                 if "errors" in response and not response["errors"]:
-                    print("   ✅ No schema validation errors found")
+                    print("   No schema validation errors found")
                 elif "message" in response:
-                    print(f"   📝 API message: {response['message']}")
+                    print(f"   API message: {response['message']}")
         else:
-            print("   ❌ API validation FAILED!")
+            print("   API validation FAILED!")
             if "error" in api_validation:
                 print(f"   Error: {api_validation['error']}")
             if "api_response" in api_validation:
@@ -89,8 +89,8 @@ def test_transformation():
         print(f"Number of Care Plans: {len(rd_result.get('carePlans', []))}")
         print(f"Number of Episodes: {len(rd_result.get('episodesOfCare', []))}")
         print(f"Number of NGS Reports: {len(rd_result.get('ngsReports', []))}")
-        print(f"Local Validation: {'✅ PASS' if is_valid else '❌ FAIL'}")
-        print(f"API Validation: {'✅ PASS' if api_validation.get('validation_successful') else '❌ FAIL'}")
+        print(f"Local Validation: {'PASS' if is_valid else 'FAIL'}")
+        print(f"API Validation: {'PASS' if api_validation.get('validation_successful') else 'FAIL'}")
         
         # Print first diagnosis if exists
         if rd_result.get('diagnoses'):
@@ -150,9 +150,9 @@ def test_with_multiple_files():
             }
             
             if api_validation.get("validation_successful"):
-                print(f"✅ API validation passed for {filename}")
+                print(f"API validation passed for {filename}")
             else:
-                print(f"❌ API validation failed for {filename}")
+                print(f"API validation failed for {filename}")
                 if "error" in api_validation:
                     print(f"   Error: {api_validation['error']}")
             
@@ -163,8 +163,8 @@ def test_with_multiple_files():
     print("\n=== SUMMARY OF ALL TESTS ===")
     for filename, result in results.items():
         if result["success"]:
-            local_status = "✅" if result['valid'] else "❌"
-            api_status = "✅" if result.get('api_valid', False) else "❌"
+            local_status = "PASS" if result['valid'] else "FAIL"
+            api_status = "PASS" if result.get('api_valid', False) else "FAIL"
             print(f"{filename}:")
             print(f"  Local Validation: {local_status}")
             print(f"  API Validation: {api_status}")

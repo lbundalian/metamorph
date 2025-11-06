@@ -9,7 +9,7 @@ __version__ = "0.1.0"
 """Metamorph - Medical data format transformation library."""
 from .morphers import BaseMorpher, KDKMorpher
 from .models import KDKSchema, RDSchema
-from .utils import validate_with_api, KDKRDMapping
+from .utils import validate_with_api
 
 __version__ = "0.1.0"
 __all__ = [
@@ -17,6 +17,5 @@ __all__ = [
     "KDKMorpher", 
     "KDKSchema", 
     "RDSchema",
-    "validate_with_api",
-    "KDKRDMapping"
+    "validate_with_api"
 ]

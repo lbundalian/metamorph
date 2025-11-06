@@ -95,13 +95,13 @@ def main():
     
     # Check if validation was successful
     if "error" in response:
-        print(f"\n❌ Validation failed with error: {response['error']}")
+        print(f"\nValidation failed with error: {response['error']}")
         sys.exit(1)
     elif "errors" in response and response["errors"]:
-        print(f"\n❌ Schema validation failed with {len(response['errors'])} errors")
+        print(f"\nSchema validation failed with {len(response['errors'])} errors")
         sys.exit(1)
     else:
-        print("\n✅ Validation successful!")
+        print("\nValidation successful!")
         sys.exit(0)
 
 if __name__ == "__main__":

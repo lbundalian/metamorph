@@ -370,19 +370,19 @@ def batch_process(input_dir: str, output_dir: str = "output", target_schema: str
     if passed_validation:
         print(f"\nPASSED VALIDATION FILES:")
         for result in passed_validation:
-            print(f"   ✅ {result['file']} -> passed_validation/{Path(result['output_file']).name}")
+            print(f"   {result['file']} -> passed_validation/{Path(result['output_file']).name}")
     
     if failed_validation:
         print(f"\nFAILED VALIDATION FILES:")
         for result in failed_validation:
-            print(f"   ⚠️  {result['file']} -> failed_validation/{Path(result['output_file']).name}")
+            print(f"   {result['file']} -> failed_validation/{Path(result['output_file']).name}")
             if result.get('validation_message'):
                 print(f"      Reason: {result['validation_message'][:100]}...")
     
     if error_results:
         print(f"\nPROCESSING ERROR FILES:")
         for result in error_results:
-            print(f"   ❌ {result['file']} -> errors/{Path(result['output_file']).name}")
+            print(f"   {result['file']} -> errors/{Path(result['output_file']).name}")
             print(f"      Error: {result['error'][:100]}..." if result['error'] else "Unknown error")
     
     # Display detailed failure analysis for transformation failures

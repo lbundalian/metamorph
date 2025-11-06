@@ -34,7 +34,7 @@ example_kdk_data = {
 
 def test_health_check():
     """Test health check endpoint"""
-    print("🏥 Testing health check...")
+    print("Testing health check...")
     response = requests.get(f"{BASE_URL}/health")
     print(f"Status: {response.status_code}")
     print(f"Response: {response.json()}")
@@ -42,7 +42,7 @@ def test_health_check():
 
 def test_convert_kdk():
     """Test KDK to RD conversion"""
-    print("🔄 Testing KDK to RD conversion...")
+    print("Testing KDK to RD conversion...")
     response = requests.post(
         f"{BASE_URL}/convert",
         json={"data": example_kdk_data}
@@ -51,16 +51,16 @@ def test_convert_kdk():
     result = response.json()
     print(f"Success: {result['success']}")
     if result['success']:
-        print("✅ Conversion successful!")
+        print("Conversion successful!")
         return result['rd_data']
     else:
-        print(f"❌ Conversion failed: {result['error']}")
+        print(f"Conversion failed: {result['error']}")
         return None
     print("-" * 50)
 
 def test_validate_kdk():
     """Test KDK validation"""
-    print("✅ Testing KDK validation...")
+    print("Testing KDK validation...")
     response = requests.post(
         f"{BASE_URL}/validate-kdk",
         json={"data": example_kdk_data}
@@ -76,10 +76,10 @@ def test_validate_kdk():
 def test_validate_rd(rd_data):
     """Test RD validation"""
     if not rd_data:
-        print("❌ No RD data to validate")
+        print("No RD data to validate")
         return
     
-    print("🔍 Testing RD validation...")
+    print("Testing RD validation...")
     response = requests.post(
         f"{BASE_URL}/validate-rd",
         json=rd_data
@@ -94,7 +94,7 @@ def test_validate_rd(rd_data):
 
 def test_convert_and_validate():
     """Test combined conversion and validation"""
-    print("🚀 Testing convert and validate...")
+    print("Testing convert and validate...")
     response = requests.post(
         f"{BASE_URL}/convert-and-validate",
         json={"data": example_kdk_data}
@@ -136,10 +136,10 @@ if __name__ == "__main__":
         # test combined
         test_convert_and_validate()
         
-        print("✅ All tests completed!")
+        print("All tests completed!")
         
     except requests.exceptions.ConnectionError:
-        print("❌ Could not connect to API. Make sure the server is running:")
+        print("Could not connect to API. Make sure the server is running:")
         print("   python app/run_app.py")
     except Exception as e:
-        print(f"❌ Test failed: {e}")
+        print(f"Test failed: {e}")
