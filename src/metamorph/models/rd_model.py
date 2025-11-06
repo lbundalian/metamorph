@@ -2,6 +2,7 @@
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 from .base_model import BaseModel
+from .consent_model import Metadata
 
 # SE-dip RD model based on https://ibmi-ut.atlassian.net/wiki/spaces/DRD/pages/1474938/Data+Model+-+SE+dip
 

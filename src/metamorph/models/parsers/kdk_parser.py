@@ -2,6 +2,7 @@
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 import uuid
+from ..consent_model import *
 from ..kdk_model import (
     Coding, KDKSchema, Patient, Gender, VitalStatus, Age, Diagnosis, ICD10GM, 
     AlphaIdSE, Orphanet, VerificationStatus, FamilyControlLevel,
@@ -48,6 +49,7 @@ class KDKParser:
         plan_data = raw_json.get("plan", {})
         molecular_data = raw_json.get("molecular", {})
         
+        meta = self._parse_metadata(meta_data)
         # create patient from metadata
         patient = self._parse_patient(meta_data)
         
@@ -77,9 +79,49 @@ class KDKParser:
             ngsReports=ngs_reports,
             recordedOn=datetime.now().strftime("%Y-%m-%d"),
             healthInsurance=insurance,
-            lastUpdate=datetime.now().strftime("%Y-%m-%d")
+            lastUpdate=datetime.now().strftime("%Y-%m-%d"),
+            metaData=meta
         )
     
+    def _parse_metadata(self, metadata: Dict[str, Any]) -> Metadata:
+
+        submission_type = metadata.get("submission", "").get("type", "")
+        transfer_tan = metadata.get("tanC", "")
+        insurance = self._parse_insurance(metadata)
+        project_consent_meta = metadata.get("mvConsent", False)
+        provisions = []
+        for scope in project_consent_meta.get("scope", []):
+            # policy = Consent(
+            #     presentedOn=scope.get("date", ""),
+            #     consented=scope.get("type", ""),
+            #     lastUpdate=scope.get("date", ""),
+            #     version=project_consent_meta.get("version", "")
+            # )
+            provision = Provision(
+                purpose=scope.get("domain", ""),
+                date=scope.get("date", ""),
+                type=scope.get("type", "")
+            )
+            provisions.append(provision)
+
+        consent = Consent(
+            date=project_consent_meta.get("presentationDate", ""),
+            version=project_consent_meta.get("version", ""),
+            provisions=provisions
+        )
+        research_consent = metadata.get("researchConsents", [])
+
+
+        """Parse metadata information."""
+        return Metadata(
+            submissionType=submission_type,
+            transferTAN=transfer_tan,
+            healthInsuranceType=insurance,
+            modelProjectConsent=consent,
+            researchConsent=research_consent
+        )
+
+
     def _parse_patient(self, meta_data: Dict[str, Any]) -> Patient:
         """Parse patient information from metadata."""
         # Parse gender
@@ -93,7 +135,7 @@ class KDKParser:
         gender = Gender(code=gender_code, display=gender_display)
         
         # Parse birth date and calculate age
-        birth_date = meta_data.get("birthDate", "")
+        birth_date = meta_data.get("birthDate", "") + "-15" 
         age = None
         if birth_date:
             try:
@@ -325,7 +367,7 @@ class KDKParser:
         if submission:
             for s in submission:
                 episode = EpisodeOfCare(
-                    period={"start": s["zseContactDate"]},
+                    period={"start": s["zseContactDate"] + "-15"},
                     status="active"
                 )
             episodes.append(episode)
@@ -693,3 +735,4 @@ class KDKParser:
             raw_json = json.load(f)
         
         return self.parse(raw_json)
+    

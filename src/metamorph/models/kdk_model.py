@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 from .base_model import BaseModel
+from .consent_model import *
 from typing import Union
 
 @dataclass
@@ -301,7 +302,7 @@ class KDKSchema(BaseModel):
     episodesOfCare: List[EpisodeOfCare] = field(default_factory=list)
     healthInsurance: HealthInsurance = field(default_factory=HealthInsurance)
     ngsReports: List[NGSReport] = field(default_factory=list)
-    
+    metaData: Optional[Metadata] = None
     # metadata
     recordedOn: Optional[str] = None
     lastUpdate: Optional[str] = None

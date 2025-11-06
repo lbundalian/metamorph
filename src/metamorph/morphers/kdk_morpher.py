@@ -55,6 +55,23 @@ class KDKMorpher:
         
         raise ValueError(f"Morpher for '{target_schema}' not implemented")
     
+    def _add_metadata(self, data : Dict[str, Any], kdk_object) -> Dict[str, Any]:
+        def to_dict(obj):
+            if hasattr(obj, '__dict__'):
+                result = {}
+                for key, value in obj.__dict__.items():
+                    if hasattr(value, '__dict__'):
+                        result[key] = to_dict(value)
+                    elif isinstance(value, list):
+                        result[key] = [to_dict(item) if hasattr(item, '__dict__') else item for item in value]
+                    else:
+                        result[key] = value
+                return result
+            return obj
+        
+        data['metadata'] = to_dict(kdk_object.schema.metaData) if kdk_object.schema.metaData else {}
+        return data
+
     def _morph_to_rd(self, kdk_object: KDK) -> Dict[str, Any]:
         # transform KDK to RD format
         from ..models.rd_model import (

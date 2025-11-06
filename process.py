@@ -107,6 +107,13 @@ def process_single_file(input_file: Path, output_dir: Path, target_schema: str, 
         
         result['success'] = True
         
+
+        # Step 5: Add metadata
+        try:
+            submission_data = morpher._add_metadata(transformed_object, kdk)
+        except Exception as e:
+            raise Exception(f"Metadata addition failed: {e}")
+
     except Exception as e:
         error_msg = str(e)
         result['error'] = error_msg
