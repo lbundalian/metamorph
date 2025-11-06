@@ -90,6 +90,14 @@ class KDKParser:
         insurance = self._parse_insurance(metadata)
         project_consent_meta = metadata.get("mvConsent", False)
         provisions = []
+
+        purpose_mapping = {
+            "mvSequencing": "sequencing",
+            "reIdentification": "reidentification",
+            "caseIdentification": "case-identification"
+        }
+
+        # {sequencing, case-identification, reidentification}
         for scope in project_consent_meta.get("scope", []):
             # policy = Consent(
             #     presentedOn=scope.get("date", ""),
@@ -98,7 +106,7 @@ class KDKParser:
             #     version=project_consent_meta.get("version", "")
             # )
             provision = Provision(
-                purpose=scope.get("domain", ""),
+                purpose=purpose_mapping.get(scope.get("domain", ""), "sequencing"),
                 date=scope.get("date", ""),
                 type=scope.get("type", "")
             )
@@ -114,7 +122,7 @@ class KDKParser:
 
         """Parse metadata information."""
         return Metadata(
-            submissionType=submission_type,
+            type=submission_type,
             transferTAN=transfer_tan,
             healthInsuranceType=insurance,
             modelProjectConsent=consent,
@@ -135,7 +143,10 @@ class KDKParser:
         gender = Gender(code=gender_code, display=gender_display)
         
         # Parse birth date and calculate age
-        birth_date = meta_data.get("birthDate", "") + "-15" 
+        birth_date = meta_data.get("birthDate", "")
+        if birth_date and len(birth_date) == 7:  # Format: YYYY-MM
+            birth_date = birth_date + "-15"  # Append 15th day of the month
+        
         age = None
         if birth_date:
             try:
@@ -735,4 +746,4 @@ class KDKParser:
             raw_json = json.load(f)
         
         return self.parse(raw_json)
-    
+

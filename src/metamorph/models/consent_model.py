@@ -40,7 +40,8 @@ class Consent:
 
 @dataclass
 class Metadata:
-    submissionType: Coding
+    type: Coding
+    # submissionType: Coding
     transferTAN: str
     healthInsuranceType: Coding
     modelProjectConsent: Consent

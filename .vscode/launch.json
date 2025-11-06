@@ -45,7 +45,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/process.py",
-            "args": ["sample/confidential/isolated/", "output/isolated/", "RD"],
+            "args": ["sample/confidential/gepado/", "output/gepado/", "RD"],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
         },

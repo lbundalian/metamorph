@@ -47,14 +47,15 @@ def process_single_file(input_file: Path, output_dir: Path, target_schema: str, 
         'traceback': None,
         'output_file': None,
         'validation_status': None,
-        'validation_message': None
+        'validation_message': None,
+        'validation_errors': None,
+        'has_validation_errors': False,
+        'output_subdir': None  # Track which subdirectory was used
     }
     
     try:
         # Generate output filename: original_name_converted.json
         output_filename = f"{input_file.stem}_converted.json"
-        output_file = output_dir / output_filename
-        result['output_file'] = str(output_file)
         
         logger.info(f"Processing {input_file.name}...")
         
@@ -76,23 +77,25 @@ def process_single_file(input_file: Path, output_dir: Path, target_schema: str, 
             result['error_type'] = 'TRANSFORMATION_ERROR'
             raise e
         
-        # Step 3: Save the result
+        # Step 3: Add metadata
         try:
-            result['error_stage'] = 'SAVING'
-            save_success = morpher.save(transformed_object, str(output_file))
-            if not save_success:
-                raise Exception("Failed to save transformed object")
-            logger.info(f"  Saved to {output_filename}")
+            result['error_stage'] = 'METADATA'
+            submission_data = morpher._add_metadata(transformed_object, kdk)
         except Exception as e:
-            result['error_type'] = 'SAVE_ERROR'
-            raise e
+            result['error_type'] = 'METADATA_ERROR'
+            raise Exception(f"Metadata addition failed: {e}")
         
-        # Step 4: Validate against API
+        # Step 4: Validate against API first to determine output directory
         try:
             result['error_stage'] = 'VALIDATION'
-            is_valid, message = morpher.validate(transformed_object, target_schema)
+            is_valid, message = morpher.validate(submission_data, target_schema)
             result['validation_status'] = 'VALID' if is_valid else 'INVALID'
             result['validation_message'] = message
+            
+            # Check for validation errors (severity: error)
+            if not is_valid and "error" in message.lower():
+                result['has_validation_errors'] = True
+                result['validation_errors'] = message
             
             if is_valid:
                 logger.info(f"  Validation SUCCESS: {message}")
@@ -100,24 +103,78 @@ def process_single_file(input_file: Path, output_dir: Path, target_schema: str, 
                 logger.warning(f"  Validation WARNING: {message}")
         except Exception as e:
             result['error_type'] = 'VALIDATION_ERROR'
-            # Don't fail the entire process for validation errors
             result['validation_status'] = 'ERROR'
             result['validation_message'] = str(e)
+            result['has_validation_errors'] = True
             logger.warning(f"  Validation ERROR: {e}")
+        
+        # Step 5: Determine output subdirectory based on validation
+        if result['has_validation_errors']:
+            final_output_dir = output_dir / "failed_validation"
+            result['output_subdir'] = "failed_validation"
+        else:
+            final_output_dir = output_dir / "passed_validation" 
+            result['output_subdir'] = "passed_validation"
+        
+        # Create the appropriate subdirectory
+        final_output_dir.mkdir(exist_ok=True)
+        
+        # Update output file path
+        final_output_file = final_output_dir / output_filename
+        result['output_file'] = str(final_output_file)
+        
+        # Step 6: Save to the appropriate directory
+        try:
+            result['error_stage'] = 'SAVING'
+            save_success = morpher.save(submission_data, str(final_output_file))
+            if not save_success:
+                raise Exception("Failed to save transformed object")
+            logger.info(f"  Saved to {result['output_subdir']}/{output_filename}")
+        except Exception as e:
+            result['error_type'] = 'SAVE_ERROR'
+            raise e
         
         result['success'] = True
         
-
-        # Step 5: Add metadata
-        try:
-            submission_data = morpher._add_metadata(transformed_object, kdk)
-        except Exception as e:
-            raise Exception(f"Metadata addition failed: {e}")
-
     except Exception as e:
+        # Handle errors - save original file to errors folder
         error_msg = str(e)
         result['error'] = error_msg
         result['traceback'] = traceback.format_exc()
+        result['output_subdir'] = "errors"
+        
+        # Create errors directory
+        errors_dir = output_dir / "errors"
+        errors_dir.mkdir(exist_ok=True)
+        
+        # Copy original file to errors folder with error info
+        error_filename = f"{input_file.stem}_error.json"
+        error_file_path = errors_dir / error_filename
+        result['output_file'] = str(error_file_path)
+        
+        try:
+            # Create error report with original data
+            with open(input_file, 'r', encoding='utf-8') as f:
+                original_data = json.load(f)
+            
+            error_report = {
+                "original_file": input_file.name,
+                "error_info": {
+                    "error": error_msg,
+                    "error_type": result['error_type'],
+                    "error_stage": result['error_stage'],
+                    "timestamp": datetime.now().isoformat()
+                },
+                "original_data": original_data
+            }
+            
+            with open(error_file_path, 'w', encoding='utf-8') as f:
+                json.dump(error_report, f, indent=2, ensure_ascii=False)
+            
+            logger.info(f"  Error file saved to errors/{error_filename}")
+        except Exception as save_error:
+            logger.error(f"  Failed to save error file: {save_error}")
+        
         logger.error(f"  ERROR processing {input_file.name}: {error_msg}")
     
     return result
@@ -245,10 +302,17 @@ def batch_process(input_dir: str, output_dir: str = "output", target_schema: str
         logger.error(f"Input path is not a directory: {input_dir}")
         return
     
-    # Create output directory
+    # Create output directory and subdirectories
     output_path = Path(output_dir)
     output_path.mkdir(exist_ok=True)
+    
+    # Create subdirectories for passed validation, failed validation, and errors
+    (output_path / "passed_validation").mkdir(exist_ok=True)
+    (output_path / "failed_validation").mkdir(exist_ok=True)
+    (output_path / "errors").mkdir(exist_ok=True)
+    
     logger.info(f"Output directory created/verified: {output_dir}")
+    logger.info("Created subdirectories: passed_validation/, failed_validation/, errors/")
     
     # Find all JSON files
     json_files = list(input_path.glob("*.json"))
@@ -265,6 +329,9 @@ def batch_process(input_dir: str, output_dir: str = "output", target_schema: str
     results = []
     successful_results = []
     failed_results = []
+    passed_validation = []
+    failed_validation = []
+    error_results = []
     
     for json_file in json_files:
         result = process_single_file(json_file, output_path, target_schema, morpher, logger)
@@ -272,42 +339,102 @@ def batch_process(input_dir: str, output_dir: str = "output", target_schema: str
         
         if result['success']:
             successful_results.append(result)
+            
+            # Separate by validation results
+            if result.get('has_validation_errors'):
+                failed_validation.append(result)
+            else:
+                passed_validation.append(result)
         else:
             failed_results.append(result)
+            error_results.append(result)
     
     # Generate summary report
     print("\n" + "=" * 70)
     print("BATCH PROCESSING SUMMARY")
     print("=" * 70)
     print(f"Total files processed: {len(json_files)}")
-    print(f"Successful: {len(successful_results)}")
-    print(f"Failed: {len(failed_results)}")
+    print(f"Successful transformations: {len(successful_results)}")
+    print(f"Failed transformations: {len(failed_results)}")
     print(f"Success rate: {(len(successful_results)/len(json_files)*100):.1f}%")
     
-    if successful_results:
-        print(f"\nSUCCESSFUL FILES:")
-        for result in successful_results:
-            validation_icon = "VALID" if result['validation_status'] == 'VALID' else "WARNING"
-            print(f"   {result['file']} -> {Path(result['output_file']).name} [{validation_icon}]")
+    # Validation breakdown
+    print(f"\nOUTPUT BREAKDOWN:")
+    print(f"  Passed validation: {len(passed_validation)} -> saved to passed_validation/")
+    print(f"  Failed validation: {len(failed_validation)} -> saved to failed_validation/")
+    print(f"  Processing errors: {len(error_results)} -> saved to errors/")
     
-    # Validation summary
-    valid_count = sum(1 for r in successful_results if r.get('validation_status') == 'VALID')
-    invalid_count = sum(1 for r in successful_results if r.get('validation_status') == 'INVALID')
+    if len(successful_results) > 0:
+        print(f"  Validation success rate: {(len(passed_validation)/len(successful_results)*100):.1f}%")
     
-    if successful_results:
-        print(f"\nVALIDATION SUMMARY:")
-        print(f"   Valid against API: {valid_count}")
-        print(f"   Invalid/Warnings: {invalid_count}")
+    if passed_validation:
+        print(f"\nPASSED VALIDATION FILES:")
+        for result in passed_validation:
+            print(f"   ✅ {result['file']} -> passed_validation/{Path(result['output_file']).name}")
     
-    # Display detailed failure analysis
+    if failed_validation:
+        print(f"\nFAILED VALIDATION FILES:")
+        for result in failed_validation:
+            print(f"   ⚠️  {result['file']} -> failed_validation/{Path(result['output_file']).name}")
+            if result.get('validation_message'):
+                print(f"      Reason: {result['validation_message'][:100]}...")
+    
+    if error_results:
+        print(f"\nPROCESSING ERROR FILES:")
+        for result in error_results:
+            print(f"   ❌ {result['file']} -> errors/{Path(result['output_file']).name}")
+            print(f"      Error: {result['error'][:100]}..." if result['error'] else "Unknown error")
+    
+    # Display detailed failure analysis for transformation failures
     if failed_results:
         display_failure_analysis(failed_results)
         save_failure_report(failed_results, output_dir)
     
+    # Save validation failure report
+    if failed_validation:
+        save_validation_failure_report(failed_validation, output_dir)
+    
     # Log file location
     print(f"\nDetailed logs saved to: logs/batch_process_*.log")
+    print(f"Output structure:")
+    print(f"  {output_dir}/")
+    print(f"  ├── passed_validation/     ({len(passed_validation)} files)")
+    print(f"  ├── failed_validation/     ({len(failed_validation)} files)")
+    print(f"  └── errors/                ({len(error_results)} files)")
     
     logger.info("Batch processing completed")
+
+def save_validation_failure_report(failed_validation: list, output_dir: str) -> None:
+    """Save detailed validation failure report to JSON file"""
+    if not failed_validation:
+        return
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    report_file = Path(output_dir) / f"validation_failure_report_{timestamp}.json"
+    
+    # Create detailed report
+    report = {
+        "timestamp": timestamp,
+        "total_validation_failures": len(failed_validation),
+        "failures": []
+    }
+    
+    for failure in failed_validation:
+        failure_info = {
+            "file": failure['file'],
+            "validation_status": failure.get('validation_status'),
+            "validation_message": failure.get('validation_message'),
+            "validation_errors": failure.get('validation_errors'),
+            "output_file": failure.get('output_file')
+        }
+        report["failures"].append(failure_info)
+    
+    try:
+        with open(report_file, 'w', encoding='utf-8') as f:
+            json.dump(report, f, indent=2, ensure_ascii=False)
+        print(f"Validation failure report saved to: {report_file}")
+    except Exception as e:
+        print(f"Warning: Could not save validation failure report: {e}")
 
 def main():
     """Main entry point for batch processing"""
