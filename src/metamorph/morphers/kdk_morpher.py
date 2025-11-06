@@ -1,11 +1,12 @@
 # KDK Morpher - transforms KDK to different schemas
+import re
 from typing import Dict, Any, Union
 from ..models.kdk import KDK  
 from ..utils.validate_api import validate_with_api
 import json
 import tempfile
 import os
-
+import re
 
 from ..models.kdk_model import (
     KDKSchema, Patient, Gender, VitalStatus, Age, Diagnosis, ICD10GM, 
@@ -25,6 +26,8 @@ class KDKMorpher:
     def __init__(self):
         # init the morpher
         pass
+
+
     
     def morph(self, kdk_object: KDK, target_schema: str) -> Dict[str, Any]:
         # transform KDK to target schema
@@ -97,7 +100,8 @@ class KDKMorpher:
                 system="dnpm-dip/rd/patient/vital-status"
             ),
             dateOfDeath=kdk_schema.patient.dateOfDeath,
-            address=Address(),  # default empty address
+            municipalityCode=kdk_schema.patient.municipalityCode,
+            address=Address(municipalityCode=kdk_schema.patient.municipalityCode),  # default empty address
             # healthInsurance=HealthInsurance(
             #     code=kdk_schema.healthInsurance.type.code,
             #     display=kdk_schema.healthInsurance.type.display or ""),
@@ -111,14 +115,14 @@ class KDKMorpher:
         # Create diagnoses
         rd_diagnoses = []
         kdk_diagnosis = kdk_schema.diagnoses
-        codes = []
+
             
         has_icd10 = any(c for c in kdk_diagnosis.codings if isinstance(c, ICD10GM))
         has_orphanet = any(c for c in kdk_diagnosis.codings if isinstance(c, Orphanet))
         has_alphaIdSE = any(c for c in kdk_diagnosis.codings if isinstance(c, AlphaIdSE))
-
+        codes = []
         for k in kdk_diagnosis.codings:
-            codes = []
+            
             if isinstance(k, ICD10GM):
                 codes.append(Code(
                     code=k.code,
@@ -223,6 +227,32 @@ class KDKMorpher:
             )
             rd_hpo_terms.append(rd_hpo)
         
+        rd_ngs_reports = []  # No NGS reports in KDK, so empty list
+        for kdk_rd in kdk_schema.ngsReports:
+            
+            variant_results = {}
+            if kdk_rd.variants:
+                for variant_type, variant_list in kdk_rd.variants.items():
+                    variant_results[variant_type] = [
+                        to_dict(variant) if hasattr(variant, '__dict__') else variant 
+                        for variant in variant_list
+            ]
+            
+
+            rd_ngs = NGSReport(
+                id=str(uuid.uuid4()),
+                patient=Reference(id=kdk_schema.patient.id, type="Patient"),
+                issuedOn=kdk_rd.issuedOn or datetime.now().strftime("%Y-%m-%d"),
+                type=Code(
+                    code=kdk_rd.type.code,
+                    display=kdk_rd.type.display or "",
+                    version=kdk_rd.type.version or "",
+                    system="http://fhir.de/CodeSystem/ngs-report-type"
+                ),
+                results= variant_results
+            )
+            rd_ngs_reports.append(rd_ngs)
+
         rd_care_plans = []  # No care plans in KDK, so empty list
         for kdk_cp in kdk_schema.carePlans:
             tr = kdk_cp.therapyRecommendations or []
@@ -288,6 +318,7 @@ class KDKMorpher:
             "diagnoses": [to_dict(diag) for diag in rd_diagnoses],
             "hpoTerms": [to_dict(hpo) for hpo in rd_hpo_terms],
             "carePlans": [to_dict(cp) for cp in rd_care_plans],
+            "ngsReports": [to_dict(ngs) for ngs in rd_ngs_reports],
             "episodesOfCare": [to_dict(ep) for ep in episodes_of_care]
         }
         

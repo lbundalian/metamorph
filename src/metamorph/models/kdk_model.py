@@ -3,6 +3,12 @@ from typing import List, Dict, Any, Optional
 from .base_model import BaseModel
 from typing import Union
 
+@dataclass
+class Reference(BaseModel):
+    # reference to another resource
+    id: str = ""
+    type: str = ""
+
 # core value objects based on BfArM RD spec
 @dataclass
 class Coding(BaseModel):
@@ -180,7 +186,7 @@ class EpisodeOfCare(BaseModel):
 class Sequencing(BaseModel):
     # sequencing info
     type: str = ""  # WES, WGS, Panel, etc.
-    platform: Optional[str] = None
+    platform: Optional[Coding] = None
     kit: Optional[str] = None
 
 @dataclass
@@ -201,23 +207,17 @@ class Zygosity(BaseModel):
     code: str = ""  # homozygous, heterozygous, etc.
     display: Optional[str] = None
 
-@dataclass
-class Variant(BaseModel):
-    # genetic variant info
-    chromosome: Optional[str] = None
-    gene: Optional[str] = None
-    dnaChange: Optional[str] = None
-    proteinChange: Optional[str] = None
-    type: Optional[VariantType] = None
-    significance: Optional[Significance] = None
-    zygosity: Optional[Zygosity] = None
-
-@dataclass
-class NGSReport(BaseModel):
-    # NGS report info
-    sequencing: Sequencing = field(default_factory=Sequencing)
-    variants: List[Variant] = field(default_factory=list)
-    issuedOn: Optional[str] = None
+# @dataclass
+# class Variant(BaseModel):
+#     # genetic variant info
+#     chromosome: Optional[str] = None
+#     gene: Optional[Coding] = None
+#     gdnaChange: Optional[Coding] = None
+#     cdnaChange: Optional[Coding] = None
+#     proteinChange: Optional[Coding] = None
+#     type: Optional[VariantType] = None
+#     significance: Optional[Significance] = None
+#     zygosity: Optional[Zygosity] = None
 
 # patient info
 @dataclass
@@ -229,7 +229,7 @@ class Patient(BaseModel):
     age: Optional[Age] = None
     vitalStatus: VitalStatus = field(default_factory=VitalStatus)
     dateOfDeath: Optional[str] = None
-
+    municipalityCode: str = ""
 
 @dataclass
 class HealthInsurance(BaseModel):
@@ -237,6 +237,59 @@ class HealthInsurance(BaseModel):
     type: Coding = field(default_factory=Coding)
     reference: Optional[Dict[str, str]] = None
 
+
+@dataclass
+class ACMGCriterion:
+    value: Coding = field(default_factory=Coding)
+    modifier: Coding = field(default_factory=Coding)
+
+@dataclass
+class Variant:
+    id: Optional[str] = None
+    patient: Optional[Patient] = None
+    genes: List[Coding] = field(default_factory=list)
+    localization: List[Coding] = field(default_factory=list)
+    gDNAChange: Optional[Coding] = None
+    cDNAChange: Optional[Coding] = None
+    proteinChange: Optional[Coding] = None
+    acmgClass: Optional[Coding] = None
+    acmgCriteria: List[ACMGCriterion] = field(default_factory=list)
+    zygosity: Optional[Coding] = None
+    segregationAnalysis: Coding = None
+    modeOfInheritance: Coding = None
+    significance: Coding = None
+    clinVarID: Optional[str] = None
+    pubMedIDs: List[str] = field(default_factory=list)
+
+@dataclass
+class SmallVariant(Variant):
+    chromosome: Optional[str] = None
+    startPosition: Optional[int] = None
+    endPosition: Optional[int] = None
+    ref: Optional[str] = None
+    alt: Optional[str] = None
+
+@dataclass
+class StructuralVariant(Variant):
+    iscnDescription: Optional[Coding] = None
+
+@dataclass
+class CopyNumberVariant(Variant):
+    chromosome: Optional[Coding] = None
+    startPosition: Optional[int] = None
+    endPosition: Optional[int] = None
+    type: Optional[Coding] = None
+
+@dataclass
+class NGSReport(BaseModel):
+    # NGS report info
+    sequencing: Sequencing = field(default_factory=Sequencing)
+    variants: Dict[str, Variant] = field(default_factory=dict)
+    issuedOn: Optional[str] = None
+    type: Coding = field(default_factory=Coding)
+
+
+### Main Schema
 # main schema
 @dataclass
 class KDKSchema(BaseModel):

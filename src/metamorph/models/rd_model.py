@@ -61,6 +61,7 @@ class Patient(BaseModel):
     address: Address = field(default_factory=Address)
     healthInsurance: Optional[HealthInsurance] = None
     site: Optional[Code] = None  # DNMP Site-ID
+    municipalityCode: str = ""
 
 @dataclass
 class Diagnosis(BaseModel):

@@ -21,17 +21,10 @@ def main():
     input_file = "sample/confidential/test.json"
     output_file = "output/test_new.json"
     
-    print("🚀 Metamorph - Clean Architecture Implementation")
-    print("=" * 70)
-    print("📁 Architecture:")
-    print("   models/      - Model/schema classes + parsers/")
-    print("   morphers/    - Conversion scripts (KDKMorpher)")
-    print("   utils/       - Other methods and classes")
-    print("=" * 70)
     
     try:
         # step 1: create KDK object (auto-parses JSON)
-        print(f"📖 Step 1: Creating KDK object from {input_file}")
+        print(f"Creating KDK object from {input_file}")
         print("   Using models/parsers/kdk_parser.KDKParser")
         kdk = KDK(input_file)  # auto-parsing on init
         print(f"   ✓ KDK object: {kdk}")
