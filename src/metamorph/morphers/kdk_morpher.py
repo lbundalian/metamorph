@@ -17,6 +17,7 @@ from ..models.kdk_model import (
     Significance, Zygosity, DiagnosisCategory
 )
 
+from ..models.rd_model import RDSchema
 
 class KDKMorpher:
     # transforms KDK objects to different schemas
@@ -71,6 +72,39 @@ class KDKMorpher:
         
         data['metadata'] = to_dict(kdk_object.schema.metaData) if kdk_object.schema.metaData else {}
         return data
+
+    def _serialize_rd(self, rd_schema: RDSchema) -> Dict[str, Any]:
+        """
+        Serialize RDSchema object to dictionary format.
+        
+        Args:
+            rd_schema: RDSchema object to serialize
+            
+        Returns:
+            Dictionary representation of the RDSchema object
+        """
+        # Helper function to convert objects to dicts
+        def to_dict(obj):
+            if hasattr(obj, '__dict__'):
+                result = {}
+                for key, value in obj.__dict__.items():
+                    if hasattr(value, '__dict__'):
+                        result[key] = to_dict(value)
+                    elif isinstance(value, list):
+                        result[key] = [to_dict(item) if hasattr(item, '__dict__') else item for item in value]
+                    else:
+                        result[key] = value
+                return result
+            return obj
+        
+        return {
+            "patient": to_dict(rd_schema.patient),
+            "diagnoses": [to_dict(diag) for diag in rd_schema.diagnoses],
+            "hpoTerms": [to_dict(hpo) for hpo in rd_schema.hpoTerms],
+            "carePlans": [to_dict(cp) for cp in rd_schema.carePlans],
+            "ngsReports": [to_dict(ngs) for ngs in rd_schema.ngsReports],
+            "episodesOfCare": [to_dict(ep) for ep in rd_schema.episodesOfCare]
+        }
 
     def _morph_to_rd(self, kdk_object: KDK) -> Dict[str, Any]:
         # transform KDK to RD format
@@ -328,16 +362,17 @@ class KDKMorpher:
             )
             episodes_of_care.append(rd_ec)
 
+        rd_schema = RDSchema(
+            patient=rd_patient,
+            diagnoses=rd_diagnoses,
+            hpoTerms=rd_hpo_terms,
+            carePlans=rd_care_plans,
+            ngsReports=rd_ngs_reports,
+            episodesOfCare=episodes_of_care
+        )
 
-        # Build final result
-        rd_data = {
-            "patient": to_dict(rd_patient),
-            "diagnoses": [to_dict(diag) for diag in rd_diagnoses],
-            "hpoTerms": [to_dict(hpo) for hpo in rd_hpo_terms],
-            "carePlans": [to_dict(cp) for cp in rd_care_plans],
-            "ngsReports": [to_dict(ngs) for ngs in rd_ngs_reports],
-            "episodesOfCare": [to_dict(ep) for ep in episodes_of_care]
-        }
+ 
+        rd_data = self._serialize_rd(rd_schema)
         
         return rd_data
     
