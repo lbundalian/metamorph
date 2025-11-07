@@ -581,6 +581,8 @@ class KDKParser:
             "loss": "Loss"
         }
 
+        if type(molecular_data) is not dict:
+            molecular_data = {}
         variants = molecular_data.get("smallVariants", [])
         for variant in variants:
             criterion = variant.get("acmgCriteria", [])
