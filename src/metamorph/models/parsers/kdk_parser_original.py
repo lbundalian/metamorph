@@ -298,8 +298,7 @@ class KDKParser:
             )
         elif "ORPHA" in diag_dict.get("system", "").upper():
             mapped_diag = Orphanet(
-                # code=f"ORPHA:{diag_dict.get('code', '')}",
-                code=diag_dict.get('code', ''),
+                code=diag_dict.get("code", ""),
                 version=diag_dict.get("version", ""),
                 display=diag_dict.get("display", "")
             )
