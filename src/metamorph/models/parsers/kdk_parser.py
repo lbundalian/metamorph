@@ -13,6 +13,7 @@ from ..kdk_model import (
     StructuralVariant, ACMGCriterion, Reference
 )
 import re
+from .kdk_mappings import KDKMappings, MappingHelper
 
 class KDKParser:
     # parser to convert raw KDK JSON to KDK model objects
@@ -103,6 +104,8 @@ class KDKParser:
                 date=scope.get("date", ""),
                 type=scope.get("type", "")
             )
+
+           
             provisions.append(provision)
 
         consent = Consent(
@@ -557,6 +560,13 @@ class KDKParser:
             "from-both-parents": "Transmitted from father and mother",
         }
 
+        inheritance_normalization = {
+            "dominant": "dominant",
+            "recessive": "recessive",
+            "Xlinked": "X-linked",
+            "mitochondrial": "mitochondrial",
+            "unclear": "unclear"
+        }
         inheritance_map = {
             "dominant": "Dominant",
             "recessive": "Recessive",
@@ -597,8 +607,8 @@ class KDKParser:
                             system=c.get("https://www.acmg.net/criteria/type", "")
                         ),
                         modifier=Coding(
-                            code=c.get("modifier", ""),
-                            display=acmg_modifier_mapping.get(c.get("modifier", ""), ""),
+                            code=MappingHelper.get_acmg_criteria_modifier(c.get("value", "")),
+                            display=acmg_modifier_mapping.get(MappingHelper.get_acmg_criteria_modifier(c.get("value", "")), ""),
                             system="https://www.acmg.net/criteria/modifier"
                         )
                     ) for c in criterion
@@ -614,8 +624,8 @@ class KDKParser:
                     system="ddnpm-dip/rd/variant/segregation-analysis"
                 ),
                 modeOfInheritance=Coding(
-                    code=variant.get("modeOfInheritance", ""),
-                    display=inheritance_map.get(variant.get("modeOfInheritance", ""), ""),
+                    code=inheritance_normalization.get(variant.get("modeOfInheritance", ""), "unclear"),
+                    display=inheritance_map.get(inheritance_normalization.get(variant.get("modeOfInheritance", ""), "unclear"), "Unclear"),
                     system="dnpm-dip/rd/variant/mode-of-inheritance"
                 ),
                 significance=Coding(

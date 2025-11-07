@@ -41,11 +41,20 @@
             "cwd": "${workspaceFolder}"
         },
         {
-            "name": "Python Debugger: Batch Processor - Confidential Files",
+            "name": "Python Debugger: Batch Processor - Single Confidential File",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/process.py",
             "args": ["sample/confidential/isolated/", "sample/output/isolated/", "RD"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Python Debugger: Batch Processor - All Confidential Files",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/process.py",
+            "args": ["sample/confidential/gepado/", "sample/output/confidential/", "RD"],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
         },

@@ -194,6 +194,17 @@ class KDKMappings:
         "array": "Array",
         "other": "Other"
     }
+    
+    # ACMG criteria grouped by modifier - cleaner organization
+    ACMG_MODIFIER_GROUPS = {
+        "pvs": {"PVS1"},
+        "ps": {"PS1", "PS2", "PS3", "PS4"},
+        "pm": {"PM1", "PM2", "PM3", "PM4", "PM5", "PM6"},
+        "pp": {"PP1", "PP2", "PP3", "PP4", "PP5"},
+        "ba": {"BA1"},
+        "bs": {"BS1", "BS2", "BS3", "BS4"},
+        "bp": {"BP1", "BP2", "BP3", "BP4", "BP5", "BP6", "BP7"}
+    }
 
 
 class MappingHelper:
@@ -302,3 +313,20 @@ class MappingHelper:
             return no_scope_justification.get("reason", "other-patient-reason")
         else:
             return "other-patient-reason"
+    
+    @staticmethod
+    def get_acmg_criteria_modifier(criteria_code: str) -> str:
+        
+        criteria_upper = criteria_code.upper()
+        
+        # Search through modifier groups to find the criteria
+        for modifier, criteria_set in KDKMappings.ACMG_MODIFIER_GROUPS.items():
+            if criteria_upper in criteria_set:
+                return modifier
+        
+        return "" 
+    @staticmethod
+    def get_criteria_by_modifier(modifier_code: str) -> set:
+        
+        return KDKMappings.ACMG_MODIFIER_GROUPS.get(modifier_code.lower(), set())
+  
