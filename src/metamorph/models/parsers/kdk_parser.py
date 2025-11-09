@@ -13,37 +13,17 @@ from ..kdk_model import (
     StructuralVariant, ACMGCriterion, Reference
 )
 import re
-from .kdk_mappings import KDKMappings, MappingHelper
+from .mappings import Mappings, MappingHelper
+from ...utils.ordolib import ORDOMapper
 
 class KDKParser:
     # parser to convert raw KDK JSON to KDK model objects
 
-    def normalize_chromosome(self,chrom: str) -> str:
-        if not chrom:
-            raise ValueError("Chromosome value cannot be empty")
-
-        c = chrom.strip().lower()
-        c = re.sub(r"^(chr|chromosome|chrm|chro|chrom)\s*", "", c)
-
-        if c in {"m", "mt", "mitochondria"}:
-            return "chrM"
-
-        if c in {"x", "23"}:
-            return "chrX"
-        if c in {"y", "24"}:
-            return "chrY"
-
-        match = re.match(r"^0*(\d{1,2})$", c)
-        if match:
-            num = int(match.group(1))
-            if 1 <= num <= 22:
-                return f"chr{num}"
-            raise ValueError(f"Invalid chromosome number: {num}")
-
-        raise ValueError(f"Unrecognized chromosome format: {chrom}")
-
+    # def __init__(self):
+    #     self.mapper = ORDOMapper()
     
     def parse(self, raw_json: Dict[str, Any]) -> KDKSchema:
+        
         # parse raw JSON into KDK schema object
         case_data = raw_json.get("case", {})
         meta_data = raw_json.get("metaData", {})
@@ -51,6 +31,7 @@ class KDKParser:
         molecular_data = raw_json.get("molecular", {})
         
         meta = self._parse_metadata(meta_data)
+        
         # create patient from metadata
         patient = self._parse_patient(meta_data)
         
@@ -85,22 +66,19 @@ class KDKParser:
         )
     
     def _parse_metadata(self, metadata: Dict[str, Any]) -> Metadata:
+
         submission_type = metadata.get("submission", "").get("type", "")
         transfer_tan = metadata.get("tanC", "")
         insurance = self._parse_insurance(metadata)
         project_consent_meta = metadata.get("mvConsent", False)
         provisions = []
 
-        purpose_mapping = {
-            "mvSequencing": "sequencing",
-            "reIdentification": "reidentification",
-            "caseIdentification": "case-identification"
-        }
+
 
         # Parse model project consent provisions
         for scope in project_consent_meta.get("scope", []):
             provision = Provision(
-                purpose=purpose_mapping.get(scope.get("domain", ""), "sequencing"),
+                purpose=MappingHelper.get_purpose_code(scope.get("domain", "")),
                 date=scope.get("date", ""),
                 type=scope.get("type", "")
             )
@@ -125,48 +103,8 @@ class KDKParser:
                 # If noScopeJustification exists, empty the research_consents list
                 research_consents = []
                 
-                # Map the reason for missing research consent using your specific mapping
-                reason_mapping = {
-                    "patient-inability": "Einwilligung durch den Patienten nicht möglich",
-                    "patient-refusal": "Einwilligung vom Patienten abgelehnt",
-                    "consent-not-returned": "Einwilligung vom Patienten nicht abgegeben",
-                    "other-patient-reason": "Anderer Patienten-bedingter Grund",
-                    "technical-issues": "Consent aus technischen Gründen nicht verfügbar",
-                    "organizational-issues": "Consent aus organisatorischen Gründen nicht verfügbar"
-                }
+                research_consent_missing = MappingHelper.get_research_consent_reason(no_scope_justification)['code']
                 
-                # Handle both string and object formats for noScopeJustification
-                if isinstance(no_scope_justification, str):
-                    # Parse string description to determine reason code
-                    justification_text = no_scope_justification.lower()
-                    
-                    # Map text patterns to reason codes
-                    if "patient" in justification_text and ("unable" in justification_text or "nicht möglich" in justification_text):
-                        reason_code = "patient-inability"
-                    elif "patient" in justification_text and ("refus" in justification_text or "abgelehnt" in justification_text):
-                        reason_code = "patient-refusal"
-                    elif "not returned" in justification_text or "nicht abgegeben" in justification_text:
-                        reason_code = "consent-not-returned"
-                    elif "technical" in justification_text or "technisch" in justification_text:
-                        reason_code = "technical-issues"
-                    elif "organizational" in justification_text or "organisatorisch" in justification_text:
-                        reason_code = "organizational-issues"
-                    else:
-                        reason_code = "other-patient-reason"
-                    
-                    reason_display = reason_mapping.get(reason_code, "Anderer Patienten-bedingter Grund")
-                    
-                elif isinstance(no_scope_justification, dict):
-                    # Handle structured object format
-                    reason_code = no_scope_justification.get("reason", "other-patient-reason")
-                    reason_display = reason_mapping.get(reason_code, "Anderer Patienten-bedingter Grund")
-                else:
-                    # Fallback for unexpected format
-                    reason_code = "other-patient-reason"
-                    reason_display = "Anderer Patienten-bedingter Grund"
-                
-                # Create Coding object for missing research consent reason
-                research_consent_missing = reason_code
                 break  # Exit loop after finding the first noScopeJustification
 
         return Metadata(
@@ -180,15 +118,10 @@ class KDKParser:
 
 
     def _parse_patient(self, meta_data: Dict[str, Any]) -> Patient:
-        """Parse patient information from metadata."""
+        
         # Parse gender
         gender_code = meta_data.get("gender", "unknown")
-        gender_display = {
-            "male": "Männlich", 
-            "female": "Weiblich", 
-            "other": "Sonstiges"
-        }.get(gender_code, "Unbekannt")
-        
+        gender_display = MappingHelper.get_gender_display(gender_code)
         gender = Gender(code=gender_code, display=gender_display)
         
         # Parse birth date and calculate age
@@ -208,11 +141,12 @@ class KDKParser:
             except ValueError:
                 pass
         
-        # Parse vital status
+        # Parse vital status - FOR REVIEW
         vital_status = VitalStatus(code="alive", display="Lebend")
         
-        # Extract patient ID from reference if available
+        # Extract patient ID from reference if available??? - now am generating UUID
         # patient_id = "example-patient-001"  # Default
+        
         municipality_code = meta_data.get("addressAGS", "")
         
         patient_id = str(uuid.uuid4())
@@ -241,44 +175,32 @@ class KDKParser:
         diagnosis_list = []
             
 
-
         # Parse main diagnosis
         main_diag = diagnosis_rd.get("mainDiagnosis", {}) or diagnosis_rd.get("diagnoses", {})
         
         if type(main_diag) is list and main_diag:
             for diag in main_diag:
                 diagnosis = self._map_dict_to_rd_diagnosis(diag, diagnosis_rd)
+                # if diagnosis:
+                #     diagnoses.append(diagnosis)
                 diagnosis_list.append(diagnosis)
             
             diagnosis = self._create_diagnosis_from_dict(diagnosis_list, diagnosis_rd)
-
 
 
         return diagnosis
     
     def _parse_insurance(self, metadata: Dict[str, Any]) -> HealthInsurance:
         """Parse diagnosis information from case data."""
-        insurance = None
 
-        insurance_type= {
-                "AT": "Beihilfe",
-                "BG": "Berufsgenossenschaft",
-                "GKV": "Gesetzliche Krankenversicherung",
-                "GPV": "Gesetzliche Pflegeversicherung",
-                "PKV": "Private Krankenversicherung",
-                "PPV": "Private Pflegeversicherung",
-                "SALT": "Selbstzahler",
-                "SCO": "Sozialhilfeträger",
-                "ST": "Sonstige Kostenträger",
-                "UNK": "Unbekannt"
-        }
         insurance_code = "UNK"
 
         insurance_code = metadata.get("coverageType", {})
         if insurance_code:
             insurance = HealthInsurance(Coding(
                 code=insurance_code,
-                display=insurance_type.get(insurance_code, "Unbekannt"))
+                display=MappingHelper.get_insurance_display(insurance_code)
+                )
             )            
 
 
@@ -310,6 +232,17 @@ class KDKParser:
                 display=diag_dict.get("display", "")
             )
 
+        
+        # if isinstance(mapped_diag,Orphanet):
+        #     # Ensure ORPHA code is in 'ORPHA:NNNN' format
+        #     if not mapped_diag.code.startswith("ORPHA:"):
+        #         mapped_diag.code = f"ORPHA:{mapped_diag.code}"
+        #     is_present = self.mapper.present_in_both(mapped_diag.code)
+        #     omims = self.mapper.get_omim_from_orpha(mapped_diag.code)
+        #     if not is_present:
+        #         mapped_diag = None
+        
+
         return mapped_diag
 
     
@@ -318,9 +251,11 @@ class KDKParser:
         
         # Parse verification status
         germline_confirmed = diagnosis_rd.get("germlineDiagnosisConfirmed", False)
+        
+        ## FOR REVIEW: Adjust mapping as needed - VERIFICATION STATUS
         verification_status = VerificationStatus(
             code="confirmed" if germline_confirmed else "provisional",
-            display="Bestätigt" if germline_confirmed else "Verdachtsdiagnose"
+            display=MappingHelper.get_verification_display(germline_confirmed)
         )
         
         # Parse family control level (default to duo-genome)
@@ -331,24 +266,10 @@ class KDKParser:
 
         diagnostic_extent = diagnosis_rd.get("diagnosticExtent", "no-record")
 
-        fc_matching = { 
-            "singleGenome": "single-genome",
-            "duoGenome": "duo-genome",
-            "trioGenome": "trio-genome"
-        }
-
-        fc_level = fc_matching.get(diagnostic_extent, "no-record")
-
-        family_control_mapping = {
-            "single-genome": "Single-Genome",
-            "duo-genome": "Duo-Genome", 
-            "trio-genome": "Trio-Genome",
-            "no-record": "Keine Angabe"
-        }
+        #family_control_values = MappingHelper.get_family_control(diagnostic_extent)
         
         family_control = FamilyControlLevel(
-            code=fc_level,
-            display=family_control_mapping.get(fc_level, "no-record")
+            **(sa:=MappingHelper.get_family_control(diagnostic_extent))
         )
 
         
@@ -361,6 +282,7 @@ class KDKParser:
         )
     
     def _parse_hpo_terms(self, case_data: Dict[str, Any]) -> List[HPOTerm]:
+        
         """Parse HPO terms from case data."""
         hpo_terms = []
         diagnosis_rd = case_data.get("diagnosisRd", {})
@@ -388,10 +310,13 @@ class KDKParser:
         care_plan_rd = plan_data.get("carePlanRd", {})
         
         if care_plan_rd:
+
             # Parse therapy recommendations from preventive measures
             therapy_recommendations = []
             preventive_measures = plan_data.get("preventiveMeasures", [])
             
+
+            ### FOR REVIEW: Adjust mapping as needed - THERAPY RECOMMENDATIONS
             for measure in preventive_measures:
                 if measure.get("type") in ["genetic_counseling", "developmental_therapy"]:
                     therapy_rec = TherapyRecommendation(
@@ -401,7 +326,7 @@ class KDKParser:
                     )
                     therapy_recommendations.append(therapy_rec)
             
-            # Parse genetic counseling recommendation
+            ### FOR REVIEW: Adjust mapping as needed - GENETIC COUNSELING RECOMMENDATION
             genetic_counseling = None
             if care_plan_rd.get("counsellingRecommended"):
                 genetic_counseling = GeneticCounselingRecommendation(
@@ -420,6 +345,7 @@ class KDKParser:
         return care_plans
     
     def _parse_episodes_of_care(self, case_data: Dict[str, Any]) -> List[EpisodeOfCare]:
+
         """Parse episodes of care from metadata."""
         episodes = []
         # submission = meta_data.get("submission", {})
@@ -436,6 +362,7 @@ class KDKParser:
         return episodes
 
     def _parse_ngs_reports(self, patient_id: str, case_data: Dict[str, Any], molecular_data: Dict[str, Any]) -> List[NGSReport]:
+
         """Parse NGS reports from case data."""
         ngs_reports = []
         diagnosis_rd = case_data.get("diagnosisRd", {})
@@ -458,129 +385,7 @@ class KDKParser:
         cn_variant_list = []
         sv_variant_list = []
 
-        amgc_class_map = {
-            "1": "Benign",
-            "2": "Likely benign",
-            "3": "Uncertain significance",
-            "4": "Likely pathogenic",
-            "5": "Pathogenic",
-        }
-
-        significance_map = {
-            "primary": "Variant in context of patient's disease",
-            "incidental": "Incidental finding",
-            "candidate": "Candidate variant"
-        }
-
-
-        acmg_criteria_mapping = {
-            # Pathogenic - Very Strong
-            "PVS1": "Pathogenic Very Strong",
-
-            # Pathogenic - Strong
-            "PS1": "Pathogenic Strong",
-            "PS2": "Pathogenic Strong",
-            "PS3": "Pathogenic Strong",
-            "PS4": "Pathogenic Strong",
-
-            # Pathogenic - Moderate
-            "PM1": "Pathogenic Moderate",
-            "PM2": "Pathogenic Moderate",
-            "PM3": "Pathogenic Moderate",
-            "PM4": "Pathogenic Moderate",
-            "PM5": "Pathogenic Moderate",
-            "PM6": "Pathogenic Moderate",
-
-            # Pathogenic - Supporting
-            "PP1": "Pathogenic Supporting",
-            "PP2": "Pathogenic Supporting",
-            "PP3": "Pathogenic Supporting",
-            "PP4": "Pathogenic Supporting",
-            "PP5": "Pathogenic Supporting",
-
-            # Benign - Standalone
-            "BA1": "Benign Standalone",
-
-            # Benign - Strong
-            "BS1": "Benign Strong",
-            "BS2": "Benign Strong",
-            "BS3": "Benign Strong",
-            "BS4": "Benign Strong",
-
-            # Benign - Supporting
-            "BP1": "Benign Supporting",
-            "BP2": "Benign Supporting",
-            "BP3": "Benign Supporting",
-            "BP4": "Benign Supporting",
-            "BP5": "Benign Supporting",
-            "BP6": "Benign Supporting",
-            "BP7": "Benign Supporting",
-        }
-
-
-        acmg_modifier_mapping = {
-            # Pathogenic evidence adjustments
-            "VeryStrong": "Pathogenic Very Strong",
-            "Strong": "Pathogenic Strong",
-            "Moderate": "Pathogenic Moderate",
-            "Supporting": "Pathogenic Supporting",
-
-            # Benign evidence adjustments
-            "Standalone": "Benign Standalone",
-            "StrongBenign": "Benign Strong",   # some labs write "StrongBenign" to disambiguate
-            "SupportingBenign": "Benign Supporting",
-
-            # General adjustment modifiers (direction-independent)
-            "Upgraded": "Strength Increased",
-            "Downgraded": "Strength Decreased",
-            "NotMet": "Criterion Not Met",
-        }
-
-        zygosity_map = {
-            "heterozygous": "Heterozygous",
-            "homozygous": "Homozygous",
-            "comp-het": "Compound heterozygous",
-            "hemi": "Hemizygous",
-            "homoplasmic": "Homoplasmic",
-            "heteroplasmic": "Heteroplasmic",
-        }
-
-        segregation_analysis_normp = {
-            "notPerformed":"not-performed",
-            "deNovo": "de-novo",
-            "fromFather": "from-father",
-            "fromMother": "from-mother",
-            "fromMotherAndFather": "from-both-parents",
-        }
-
-        segregation_analysis_map = {
-            "not-performed": "Not performed",
-            "de-novo": "De novo",
-            "from-father": "Transmitted from father",
-            "from-mother": "Transmitted from mother",
-            "from-both-parents": "Transmitted from father and mother",
-        }
-
-        inheritance_normalization = {
-            "dominant": "dominant",
-            "recessive": "recessive",
-            "Xlinked": "X-linked",
-            "mitochondrial": "mitochondrial",
-            "unclear": "unclear"
-        }
-        inheritance_map = {
-            "dominant": "Dominant",
-            "recessive": "Recessive",
-            "X-linked": "X-linked",
-            "mitochondrial": "Mitochondrial",
-            "unclear": "Unclear"
-        }
-
-        cnv_type_map = {
-            "gain": "Gain",
-            "loss": "Loss"
-        }
-
+        
         if type(molecular_data) is not dict:
             molecular_data = {}
         variants = molecular_data.get("smallVariants", [])
@@ -589,7 +394,7 @@ class KDKParser:
             small_variant = SmallVariant(
                 id=str(uuid.uuid4()),
                 patient=Reference(id=patient_id, type="Patient"),
-                chromosome=self.normalize_chromosome(variant.get("chromosome", None)),
+                chromosome=MappingHelper.normalize_chromosome(variant.get("chromosome", None)),
                 startPosition=variant.get("startPosition", None),
                 endPosition=variant.get("endPosition", None),
                 ref=variant.get("ref", ""),
@@ -599,41 +404,42 @@ class KDKParser:
                 proteinChange=variant.get("proteinChange", None),
                 acmgClass=Coding(
                     code=variant.get("acmgClass", "3"),
-                    display=amgc_class_map.get(variant.get("acmgClass", "3"), "Uncertain significance"),
+                    display=MappingHelper.get_acmg_class_display(variant.get("acmgClass", "3")),
                     system="https://www.acmg.net/class"
                 ),
                 acmgCriteria=[
                     ACMGCriterion(
                         value=Coding(
                             code=c.get("value", ""),
-                            display=acmg_criteria_mapping.get(c.get("value", ""), ""),
+                            display=MappingHelper.get_acmg_criteria_display(c.get("value", "")),
                             system=c.get("https://www.acmg.net/criteria/type", "")
                         ),
                         modifier=Coding(
                             code=MappingHelper.get_acmg_criteria_modifier(c.get("value", "")),
-                            display=acmg_modifier_mapping.get(MappingHelper.get_acmg_criteria_modifier(c.get("value", "")), ""),
+                            display=MappingHelper.get_acmg_modifier_display(MappingHelper.get_acmg_criteria_modifier(c.get("value", ""))),
                             system="https://www.acmg.net/criteria/modifier"
                         )
                     ) for c in criterion
                 ],
                 zygosity=Coding(
-                    code=variant.get("zygosity", "").lower(),
-                    display=zygosity_map.get(variant.get("zygosity", "").lower(), ""),
+                    **(sa:=MappingHelper.get_zygosity(variant.get("zygosity", "").lower())),
+                    # code=variant.get("zygosity", "").lower(),
+                    # display=MappingHelper.get_zygosity(variant.get("zygosity", "").lower()),
                     system="dnpm-dip/rd/variant/zygosity"
                 ),
-                segregationAnalysis=Coding(
-                    code=segregation_analysis_normp.get(variant.get("segregationAnalysis", ""), ""),
-                    display=segregation_analysis_map.get(segregation_analysis_normp.get(variant.get("segregationAnalysis", ""), ""), ""),
+                segregationAnalysis = Coding(
+                    **(sa := MappingHelper.get_segregation_analysis(variant.get("segregationAnalysis", ""))),
                     system="ddnpm-dip/rd/variant/segregation-analysis"
                 ),
                 modeOfInheritance=Coding(
-                    code=inheritance_normalization.get(variant.get("modeOfInheritance", ""), "unclear"),
-                    display=inheritance_map.get(inheritance_normalization.get(variant.get("modeOfInheritance", ""), "unclear"), "Unclear"),
+                    **(sa:=MappingHelper.get_inheritance(variant.get("modeOfInheritance", "unclear"))),
+                    # code=inheritance_normalization.get(variant.get("modeOfInheritance", ""), "unclear"),
+                    # display=inheritance_map.get(inheritance_normalization.get(variant.get("modeOfInheritance", ""), "unclear"), "Unclear"),
                     system="dnpm-dip/rd/variant/mode-of-inheritance"
                 ),
                 significance=Coding(
                     code=variant.get("diagnosticSignificance", ""),
-                    display=significance_map.get(variant.get("diagnosticSignificance", ""), ""),
+                    display=MappingHelper.get_significance_display(variant.get("diagnosticSignificance", "")),
                     system="dnpm-dip/rd/variant/significance"
                 ),
                 clinVarID=variant.get("clinVarID", None),
@@ -652,7 +458,7 @@ class KDKParser:
                 endPosition=variant.get("endPosition", None),
                 type=Coding(
                     code=variant.get("cnvType", ""),
-                    display=cnv_type_map.get(variant.get("cnvType", ""), ""),
+                    display=MappingHelper.get_cnv_type_display(variant.get("cnvType", "")),
                     system="dnpm-dip/rd/variant/cnv-type"
                 ),
                 gDNAChange=variant.get("gdnaChange", None),
@@ -660,41 +466,41 @@ class KDKParser:
                 proteinChange=variant.get("proteinChange", None),
                 acmgClass=Coding(
                     code=variant.get("acmgClass", "3"),
-                    display=amgc_class_map.get(variant.get("acmgClass", "3"), "Uncertain significance"),
+                    display=MappingHelper.get_acmg_class_display(variant.get("acmgClass", "3")),
                     system="https://www.acmg.net/class"
                 ),
                 acmgCriteria=[
                     ACMGCriterion(
                         value=Coding(
                             code=c.get("value", ""),
-                            display=acmg_criteria_mapping.get(c.get("value", ""), ""),
+                            display=MappingHelper.get_acmg_criteria_display(c.get("value", "")),
                             system=c.get("https://www.acmg.net/criteria/type", "")
                         ),
                         modifier=Coding(
                             code=c.get("modifier", ""),
-                            display=acmg_modifier_mapping.get(c.get("modifier", ""), ""),
+                            display=MappingHelper.get_acmg_modifier_display(c.get("modifier", "")),
                             system="https://www.acmg.net/criteria/modifier"
                         )
                     ) for c in variant.get("acmgCriteria", [])
                 ],
                 zygosity=Coding(
                     code=variant.get("zygosity", "").lower(),
-                    display=zygosity_map.get(variant.get("zygosity", "").lower(), ""),
+                    display=MappingHelper.get_zygosity(variant.get("zygosity", "").lower()),
                     system="dnpm-dip/rd/variant/zygosity"
                 ),
-                segregationAnalysis=Coding(
-                    code=segregation_analysis_normp.get(variant.get("segregationAnalysis", ""), ""),
-                    display=segregation_analysis_map.get(segregation_analysis_normp.get(variant.get("segregationAnalysis", ""), ""), ""),
+                segregationAnalysis = Coding(
+                    **(sa := MappingHelper.get_segregation_analysis(variant.get("segregationAnalysis", ""))),
                     system="ddnpm-dip/rd/variant/segregation-analysis"
                 ),
                 modeOfInheritance=Coding(
-                    code=variant.get("modeOfInheritance", ""),
-                    display=inheritance_map.get(variant.get("modeOfInheritance", ""), ""),
+                    **(sa:=MappingHelper.get_inheritance(variant.get("modeOfInheritance", "unclear"))),
+                    # code=inheritance_normalization.get(variant.get("modeOfInheritance", ""), "unclear"),
+                    # display=inheritance_map.get(inheritance_normalization.get(variant.get("modeOfInheritance", ""), "unclear"), "Unclear"),
                     system="dnpm-dip/rd/variant/mode-of-inheritance"
                 ),
                 significance=Coding(
                     code=variant.get("diagnosticSignificance", ""),
-                    display=significance_map.get(variant.get("diagnosticSignificance", ""), ""),
+                    display=MappingHelper.get_significance_display(variant.get("diagnosticSignificance", "")),
                     system="dnpm-dip/rd/variant/significance"
                 ),
                 clinVarID=variant.get("clinVarID", None),
@@ -717,41 +523,41 @@ class KDKParser:
                 proteinChange=variant.get("proteinChange", None),
                 acmgClass=Coding(
                     code=variant.get("acmgClass", "3"),
-                    display=amgc_class_map.get(variant.get("acmgClass", "3"), "Uncertain significance"),
+                    display=MappingHelper.get_acmg_class_display(variant.get("acmgClass", "3")),
                     system="https://www.acmg.net/class"
                 ),
                 acmgCriteria=[
                     ACMGCriterion(
                         value=Coding(
                             code=c.get("value", ""),
-                            display=acmg_criteria_mapping.get(c.get("value", ""), ""),
+                            display=MappingHelper.get_acmg_criteria_display(c.get("value", "")),
                             system=c.get("https://www.acmg.net/criteria/type", "")
                         ),
                         modifier=Coding(
                             code=c.get("modifier", ""),
-                            display=acmg_modifier_mapping.get(c.get("modifier", ""), ""),
+                            display=MappingHelper.get_acmg_modifier_display(c.get("modifier", "")),
                             system="https://www.acmg.net/criteria/modifier"
                         )
                     ) for c in variant.get("acmgCriteria", [])
                 ],
                 zygosity=Coding(
                     code=variant.get("zygosity", "").lower(),
-                    display=zygosity_map.get(variant.get("zygosity", "").lower(), ""),
+                    display=MappingHelper.get_zygosity(variant.get("zygosity", "").lower()),
                     system="dnpm-dip/rd/variant/zygosity"
                 ),
-                segregationAnalysis=Coding(
-                    code=segregation_analysis_normp.get(variant.get("segregationAnalysis", ""), ""),
-                    display=segregation_analysis_map.get(segregation_analysis_normp.get(variant.get("segregationAnalysis", ""), ""), ""),
+                segregationAnalysis = Coding(
+                    **(sa := MappingHelper.get_segregation_analysis(variant.get("segregationAnalysis", ""))),
                     system="ddnpm-dip/rd/variant/segregation-analysis"
                 ),
                 modeOfInheritance=Coding(
-                    code=variant.get("modeOfInheritance", ""),
-                    display=inheritance_map.get(variant.get("modeOfInheritance", ""), ""),
+                    **(sa:=MappingHelper.get_inheritance(variant.get("modeOfInheritance", "unclear"))),
+                    # code=inheritance_normalization.get(variant.get("modeOfInheritance", ""), "unclear"),
+                    # display=inheritance_map.get(inheritance_normalization.get(variant.get("modeOfInheritance", ""), "unclear"), "Unclear"),
                     system="dnpm-dip/rd/variant/mode-of-inheritance"
                 ),
                 significance=Coding(
                     code=variant.get("diagnosticSignificance", ""),
-                    display=significance_map.get(variant.get("diagnosticSignificance", ""), ""),
+                    display=MappingHelper.get_significance_display(variant.get("diagnosticSignificance", "")),
                     system="dnpm-dip/rd/variant/significance"
                 ),
                 clinVarID=variant.get("clinVarID", None),
@@ -764,29 +570,17 @@ class KDKParser:
         # issued_on = meta_data.get("submission", {}).get("date", datetime.now().strftime("%Y-%m-%d"))
         issued_on = case_data.get("molecularBoardDecisionDate", datetime.now().strftime("%Y-%m-%d"))
 
-        genomic_test_map = {
-            "wgs": "genome-short-read",
-            "wgs_lr": "genome-long-read"
-        }
-        genomic_display_map = {
-            "panel": "Panel",
-            "exome": "Exome", 
-            "genome-short-read": "Genome short-read",
-            "genome-long-read": "Genome long-read",
-            "single": "Single",
-            "karyotyping": "Karyotyping",
-            "array": "Array",
-            "other": "Other"
-        }
+    
         variants = {"smallVariants": small_variant_list, "copyNumberVariants": cn_variant_list, "structuralVariants": sv_variant_list}
-        genomic_test_type = genomic_test_map.get(diagnosis_rd.get("libraryType", "wgs").lower(), "other")
+        genomic_test_type = MappingHelper.get_genomic_test_type(diagnosis_rd.get("libraryType", "wgs").lower())
         ngs_report = NGSReport(
                 sequencing=sequencing,
                 variants=variants,
                 issuedOn=issued_on,
                 type=Coding(
-                    code=genomic_test_type,
-                    display=genomic_display_map.get(genomic_test_type, "Other"),
+                    **(sa:=MappingHelper.get_genomic_test(genomic_test_type)),
+                    # code=genomic_test_type,
+                    # display=MappingHelper.get_genomic_test(genomic_test_type),
                     system="dnpm-dip/ngs/type"
                 )
             )

@@ -13,7 +13,7 @@ from ..kdk_model import (
     StructuralVariant, ACMGCriterion, Reference
 )
 import re
-from .kdk_mappings import KDKMappings, MappingHelper
+from .mappings import Mappings, MappingHelper
 
 class KDKParser:
     # parser to convert raw KDK JSON to KDK model objects
